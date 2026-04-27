@@ -89,15 +89,32 @@ function LibraryModal:init()
     self:_buildFrame()
 end
 
+--- Dismiss the on-screen keyboard if any, and clear the input's focused
+--- visual state so the thick focused-border doesn't linger after the
+--- keyboard hides. Called from tab/chip handlers, the search-row button
+--- callbacks, the tap-outside fallback, and from preset_manager_modal's
+--- card/star/preview/apply paths via self.modal_widget:_dismissKeyboard().
+function LibraryModal:_dismissKeyboard()
+    local input = self._search_input
+    if not input then return end
+    if input.isKeyboardVisible and input:isKeyboardVisible() then
+        input:onCloseKeyboard()
+    end
+    if input.focused then
+        input.focused = false
+        UIManager:setDirty(self, "ui")
+    end
+end
+
 function LibraryModal:onTapDismissKeyboard(_arg, ges)
     -- This handler only fires for taps that no deeper widget consumed (per
     -- WidgetContainer's propagateEvent). For child-consumed taps (chip/tab/
     -- button/tile/keyboard-key) the deeper handler runs and dismisses the
-    -- keyboard explicitly via _dismissKeyboard / withKeyboardDismiss / the
-    -- search row's button callbacks. This catches the empty-modal-area case.
+    -- keyboard explicitly via :_dismissKeyboard(). This catches the
+    -- empty-modal-area case.
     --
     -- We also gate dismissal on the tap being OUTSIDE the keyboard's bounds
-    -- so that taps on keyboard keys (which propagate up uncomsumed in some
+    -- so that taps on keyboard keys (which propagate up unconsumed in some
     -- KOReader gesture paths) don't accidentally dismiss the keyboard before
     -- the user's keystroke registers. Pattern lifted from bookends_line_editor.
     if self._search_input and self._search_input.isKeyboardVisible
@@ -105,7 +122,7 @@ function LibraryModal:onTapDismissKeyboard(_arg, ges)
         local kb = self._search_input.keyboard
         if kb and kb.dimen and ges and ges.pos
                 and ges.pos:notIntersectWith(kb.dimen) then
-            self._search_input:onCloseKeyboard()
+            self:_dismissKeyboard()
         end
     end
     return false  -- don't consume; the user's tap already missed any deeper handler
@@ -252,14 +269,11 @@ function LibraryModal:_onTabSelect(tab_key)
     -- Default chip on the new tab is its first chip (or "all")
     local chips = self.config.chip_strip and self.config.chip_strip(self.active_tab) or {}
     self.active_chip = chips[1] and chips[1].key or nil
-    -- The search placeholder may differ per tab. Release the persisted
-    -- InputText so _renderSearchInput rebuilds it with the new hint.
-    if self._search_input then
-        if self._search_input:isKeyboardVisible() then
-            self._search_input:onCloseKeyboard()
-        end
-        self._search_input = nil
-    end
+    -- The search placeholder may differ per tab. Dismiss any open keyboard,
+    -- then release the persisted InputText so _renderSearchInput rebuilds
+    -- it with the new hint.
+    self:_dismissKeyboard()
+    self._search_input = nil
     if self.config.on_tab_change then self.config.on_tab_change(tab_key) end
     self:refresh()
 end
@@ -323,22 +337,19 @@ function LibraryModal:_renderSearchInput(content_width)
             focused = false,
             enter_callback = function()
                 local q = self._search_input:getText()
-                if self._search_input.isKeyboardVisible
-                        and self._search_input:isKeyboardVisible() then
-                    self._search_input:onCloseKeyboard()
-                end
+                self:_dismissKeyboard()
                 self:_onSearchSubmit(q)
             end,
         }
         -- InputText sets self.focused = true inside onTapTextBox AFTER calling
-        -- onShowKeyboard, so the keyboard's repaint pass renders with focused
-        -- still false (thin border). The focus-state border only refreshes on
-        -- the next paint trigger (e.g. first keystroke). Wrap onTapTextBox to
-        -- explicitly mark the input dirty after focus flips, so the thicker
-        -- focused border appears the moment the keyboard pops up.
+        -- onShowKeyboard, so the keyboard's repaint pass would render with
+        -- focused still false (thin border). Set focused = true BEFORE the
+        -- orig handler so the keyboard's paint sees the right state, giving
+        -- the user immediate visual confirmation that the field is editable.
         local input = self._search_input
         local orig_onTapTextBox = input.onTapTextBox
         input.onTapTextBox = function(this, arg, ges)
+            this.focused = true
             local r = orig_onTapTextBox(this, arg, ges)
             UIManager:setDirty(self, "ui")
             return r
@@ -375,19 +386,13 @@ function LibraryModal:_renderSearchInput(content_width)
         return ic
     end
 
-    local function dismissKeyboard()
-        if self._search_input and self._search_input.isKeyboardVisible
-                and self._search_input:isKeyboardVisible() then
-            self._search_input:onCloseKeyboard()
-        end
-    end
     local search_btn = chipButton(search_label, search_btn_w, function()
         local q = self._search_input and self._search_input:getText() or ""
-        dismissKeyboard()
+        self:_dismissKeyboard()
         self:_onSearchSubmit(q)
     end)
     local clear_btn = chipButton(clear_label, clear_btn_w, function()
-        dismissKeyboard()
+        self:_dismissKeyboard()
         if self._search_input then self._search_input:setText("") end
         self:_onSearchSubmit("")
     end)
@@ -490,10 +495,7 @@ function LibraryModal:_onChipTap(chip_key)
     if self.active_chip == chip_key then return end
     -- Dismiss the keyboard before refreshing so the user isn't trapped under
     -- it after applying a chip filter.
-    if self._search_input and self._search_input.isKeyboardVisible
-            and self._search_input:isKeyboardVisible() then
-        self._search_input:onCloseKeyboard()
-    end
+    self:_dismissKeyboard()
     self.active_chip = chip_key
     self.page = 1
     if self.config.on_chip_tap then self.config.on_chip_tap(chip_key) end
