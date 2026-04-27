@@ -1375,6 +1375,11 @@ function Bookends:_paintToInner(bb, x, y)
     -- Shared across every Tokens.expand() call for this paint: lets expensive
     -- setup (buildConditionState) happen once even when many lines need it.
     local paint_ctx = {}
+    -- Per-paint cache for SQLite-backed stats reads (getCurrentBookStats,
+    -- getTodayBookStats). Same idea as paint_ctx — many lines may use stats
+    -- tokens, but the underlying SQL only needs to run once per paint.
+    -- Allocated fresh each paint so values stay current across page turns.
+    local stats_cache = {}
     for _, pos in ipairs(self.POSITIONS) do
         if self:isPositionActive(pos.key) then
             local pos_settings = self.positions[pos.key]
@@ -1404,7 +1409,7 @@ function Bookends:_paintToInner(bb, x, y)
                     local result, is_empty, line_bar = Tokens.expand(line, self.ui, session_elapsed, session_pages,
                         nil, self.settings:readSetting("tick_width_multiplier", self.DEFAULT_TICK_WIDTH_MULTIPLIER),
                         symbol_color, paint_ctx,
-                        { legacy_literal = is_edit_line })
+                        { legacy_literal = is_edit_line, stats_cache = stats_cache })
                     if not is_empty then
                         table.insert(expanded_lines, result)
                         table.insert(final_indices, visible_indices[j])
