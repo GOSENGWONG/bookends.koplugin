@@ -101,7 +101,10 @@ function LibraryModal:_dismissKeyboard()
         input:onCloseKeyboard()
     end
     if input.focused then
-        input.focused = false
+        -- :unfocus() also flips _frame_textwidget.color from BLACK→DARK_GRAY,
+        -- which is the visible "focus border" the user is asking for.
+        -- Setting input.focused = false alone wouldn't update the colour.
+        input:unfocus()
         UIManager:setDirty(self, "ui")
     end
 end
@@ -341,16 +344,20 @@ function LibraryModal:_renderSearchInput(content_width)
                 self:_onSearchSubmit(q)
             end,
         }
-        -- InputText sets self.focused = true inside onTapTextBox AFTER calling
-        -- onShowKeyboard, so the keyboard's repaint pass would render with
-        -- focused still false (thin border). Set focused = true BEFORE the
-        -- orig handler so the keyboard's paint sees the right state, giving
-        -- the user immediate visual confirmation that the field is editable.
+        -- onTapTextBox in KOReader's InputText sets self.focused = true but
+        -- never calls :focus() — the latter is what flips
+        -- self._frame_textwidget.color from DARK_GRAY → BLACK (the visible
+        -- "focused border"). Without :focus(), the colour stays gray until
+        -- some other path triggers the update (typing the first character).
+        -- Wrap onTapTextBox to call :focus() ourselves and mark the modal
+        -- dirty so the colour change shows up immediately.
         local input = self._search_input
         local orig_onTapTextBox = input.onTapTextBox
         input.onTapTextBox = function(this, arg, ges)
-            this.focused = true
             local r = orig_onTapTextBox(this, arg, ges)
+            if not this.focused or this._frame_textwidget.color ~= Blitbuffer.COLOR_BLACK then
+                this:focus()
+            end
             UIManager:setDirty(self, "ui")
             return r
         end
