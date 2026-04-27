@@ -596,16 +596,35 @@ function LibraryModal:_renderGridArea(content_width, area_height)
         if item then
             local cell_dimen = Geom:new{ w = cell_w, h = cell_h }
             local cell_widget = self.config.cell_renderer(item, cell_dimen)
-            if self.config.cell_long_tap then
+            -- Always wrap cells in an InputContainer so tap (and optional
+            -- long-tap) gestures route through to the domain handlers.
+            -- on_cell_tap fires the action (insert glyph, etc.); cell_long_tap
+            -- is optional (e.g. show name tooltip on long-press).
+            if self.config.on_cell_tap or self.config.cell_long_tap then
                 local GestureRange = require("ui/gesturerange")
                 local ic = InputContainer:new{
                     dimen = Geom:new{ w = cell_w, h = cell_h },
                     cell_widget,
                 }
-                ic.ges_events = {
-                    Hold = { GestureRange:new{ ges = "hold", range = ic.dimen } },
-                }
-                ic.onHold = function() self.config.cell_long_tap(item); return true end
+                ic.ges_events = {}
+                if self.config.on_cell_tap then
+                    ic.ges_events.TapSelect = {
+                        GestureRange:new{ ges = "tap", range = ic.dimen }
+                    }
+                    ic.onTapSelect = function()
+                        self.config.on_cell_tap(item)
+                        return true
+                    end
+                end
+                if self.config.cell_long_tap then
+                    ic.ges_events.Hold = {
+                        GestureRange:new{ ges = "hold", range = ic.dimen }
+                    }
+                    ic.onHold = function()
+                        self.config.cell_long_tap(item)
+                        return true
+                    end
+                end
                 cell_widget = ic
             end
             table.insert(hg, cell_widget)
