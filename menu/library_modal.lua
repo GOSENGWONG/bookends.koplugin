@@ -104,11 +104,15 @@ function LibraryModal:_renderTitleBar(content_width, modal_w)
         fgcolor = Blitbuffer.COLOR_BLACK,
     }
 
+    -- Title bar height = text height + equal top/bottom padding.
+    -- Passed to _renderTabSegments so each segment can fill the full bar height.
+    local title_bar_h = title_w:getSize().h + 2 * bar_pad
+
     local right_widget
     if self.config.tabs then
         -- Build segmented [Tab1 | Tab2] pill row; active tab is filled black,
         -- inactive is outlined. Tap on an inactive tab fires on_tab_change.
-        right_widget = self:_renderTabSegments()
+        right_widget = self:_renderTabSegments(title_bar_h)
     else
         right_widget = HorizontalSpan:new{ width = 0 }
     end
@@ -117,7 +121,7 @@ function LibraryModal:_renderTitleBar(content_width, modal_w)
     local row = HorizontalGroup:new{
         align = "center",
         LeftContainer:new{
-            dimen = Geom:new{ w = content_width - right_widget:getSize().w, h = title_w:getSize().h },
+            dimen = Geom:new{ w = content_width - right_widget:getSize().w, h = title_bar_h },
             title_w,
         },
         right_widget,
@@ -126,9 +130,7 @@ function LibraryModal:_renderTitleBar(content_width, modal_w)
     -- Separator runs the full frame width (modal_w) so it spans edge-to-edge,
     -- ignoring the frame's content_pad side insets.
     return VerticalGroup:new{
-        VerticalSpan:new{ width = bar_pad },
         row,
-        VerticalSpan:new{ width = bar_pad },
         LineWidget:new{
             background = Blitbuffer.COLOR_BLACK,
             dimen = Geom:new{ w = modal_w, h = Size.line.thin },
@@ -136,7 +138,7 @@ function LibraryModal:_renderTitleBar(content_width, modal_w)
     }
 end
 
-function LibraryModal:_renderTabSegments()
+function LibraryModal:_renderTabSegments(title_bar_h)
     -- Returns a HorizontalGroup of tap-able segment widgets. Active segment
     -- has black bg + white text; inactive has white bg + black text. On tap,
     -- :_onTabSelect(key) is called, which updates active_tab + invokes
@@ -147,7 +149,6 @@ function LibraryModal:_renderTabSegments()
     local TextWidget = require("ui/widget/textwidget")
     local Screen = Device.screen
     local seg_pad_h = Screen:scaleBySize(12)
-    local seg_pad_v = Screen:scaleBySize(6)
 
     local function seg(label, is_active, on_tap)
         local fg = is_active and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
@@ -155,13 +156,22 @@ function LibraryModal:_renderTabSegments()
         local tw = TextWidget:new{
             text = label, face = Font:getFace("cfont", 14), bold = is_active, fgcolor = fg,
         }
+        -- No vertical padding — vertical centering is handled by the outer
+        -- CenterContainer so the segment fills the full title bar height.
         local fc = FrameContainer:new{
             bordersize = 0, padding = 0,
             padding_left = seg_pad_h, padding_right = seg_pad_h,
-            padding_top = seg_pad_v, padding_bottom = seg_pad_v,
+            padding_top = 0, padding_bottom = 0,
             margin = 0, background = bg, tw,
         }
-        local ic = InputContainer:new{ dimen = Geom:new{ w = fc:getSize().w, h = fc:getSize().h }, fc }
+        local fc_w = fc:getSize().w
+        -- CenterContainer gives each segment the full title bar height so it
+        -- touches the separator line below and the modal's top edge above.
+        local cc = CenterContainer:new{
+            dimen = Geom:new{ w = fc_w, h = title_bar_h },
+            fc,
+        }
+        local ic = InputContainer:new{ dimen = Geom:new{ w = fc_w, h = title_bar_h }, cc }
         ic.ges_events = { TapSelect = { GestureRange:new{ ges = "tap", range = ic.dimen } } }
         ic.onTapSelect = function() on_tap(); return true end
         return ic
