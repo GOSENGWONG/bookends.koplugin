@@ -300,8 +300,13 @@ function LibraryModal:_renderSearchInput(content_width)
     -- Subtract that overhead from input_w so the search row totals exactly
     -- content_width, otherwise the row pushes the modal frame wider than
     -- modal_w and asymmetric right-edge gaps appear.
+    --
+    -- input_border matches the chip-style buttons' Size.border.thin so the
+    -- input box and adjacent buttons share the same border thickness.
+    -- (InputText's default Size.border.inputtext is ~3x thicker.)
+    local input_border = Size.border.thin
     local input_padding = Size.padding.default
-    local input_overhead = 2 * (Size.border.inputtext + input_padding)
+    local input_overhead = 2 * (input_border + input_padding)
 
     -- Pre-measure button labels so we can size the input first and then
     -- build buttons whose outer height matches the input's. Both Search and
@@ -329,15 +334,16 @@ function LibraryModal:_renderSearchInput(content_width)
     if not self._search_input then
         local InputText = require("ui/widget/inputtext")
         self._search_input = InputText:new{
-            text    = self.search_query or "",
-            hint    = placeholder,
-            parent  = self,
-            width   = input_w,
-            face    = btn_face,
-            padding = input_padding,    -- Size.padding.default for taller look
-            margin  = 0,
-            scroll  = false,
-            focused = false,
+            text       = self.search_query or "",
+            hint       = placeholder,
+            parent     = self,
+            width      = input_w,
+            face       = btn_face,
+            bordersize = input_border,
+            padding    = input_padding,
+            margin     = 0,
+            scroll     = false,
+            focused    = false,
             enter_callback = function()
                 local q = self._search_input:getText()
                 self:_dismissKeyboard()
