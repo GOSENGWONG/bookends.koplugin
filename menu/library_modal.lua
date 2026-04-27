@@ -259,6 +259,13 @@ function LibraryModal:_renderSearchInput(content_width)
     local btn_face = Font:getFace("cfont", 16)
     local btn_pad_h = Screen:scaleBySize(12)
     local gap = Screen:scaleBySize(6)
+    -- InputText wraps its TextWidget in a FrameContainer with bordersize +
+    -- padding, so its rendered outer width is `width + 2 * (border + padding)`.
+    -- Subtract that overhead from input_w so the search row totals exactly
+    -- content_width, otherwise the row pushes the modal frame wider than
+    -- modal_w and asymmetric right-edge gaps appear.
+    local input_padding = Size.padding.default
+    local input_overhead = 2 * (Size.border.inputtext + input_padding)
 
     -- Pre-measure the button labels so we can size the input first and then
     -- build buttons whose outer height matches the input's.
@@ -269,7 +276,7 @@ function LibraryModal:_renderSearchInput(content_width)
     end
     local search_label, search_btn_w = measureLabel(_("Search"))
     local clear_label,  clear_btn_w  = measureLabel("×")
-    local input_w = content_width - search_btn_w - clear_btn_w - 2 * gap
+    local input_w = content_width - search_btn_w - clear_btn_w - 2 * gap - input_overhead
 
     -- Persist the InputText across refreshes so the keyboard's reference to
     -- it stays valid. Rebuilding it on every refresh leaves the keyboard
@@ -282,7 +289,7 @@ function LibraryModal:_renderSearchInput(content_width)
             parent  = self,
             width   = input_w,
             face    = btn_face,
-            padding = Size.padding.small,
+            padding = input_padding,    -- Size.padding.default for taller look
             margin  = 0,
             scroll  = false,
             focused = false,
