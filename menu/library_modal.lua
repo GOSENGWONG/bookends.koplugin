@@ -35,7 +35,7 @@ function LibraryModal:init()
     end
     -- Default chip is "all" if present in the chip strip
     local chips = self.config.chip_strip and self.config.chip_strip(self.active_tab) or {}
-    for _, chip in ipairs(chips) do
+    for _i, chip in ipairs(chips) do
         if chip.is_active then self.active_chip = chip.key; break end
     end
     if not self.active_chip and chips[1] then
