@@ -64,20 +64,23 @@ end
 
 function LibraryModal:_buildFrame()
     local Screen = Device.screen
-    self.modal_w = math.floor(Screen:getWidth() * 0.9)
-    self.modal_h = math.floor(Screen:getHeight() * 0.85)
-    self.content_pad = MARGIN
-    self.content_w = self.modal_w - 2 * self.content_pad
+    -- Modal width: 85% of screen. Less wide than the 90% it was — visible
+    -- breathing room around the dialog for context.
+    self.modal_w = math.floor(Screen:getWidth() * 0.85)
+    -- Width of inner content (search box, chip strip, cards, etc.) once the
+    -- per-section MARGIN insets are applied in refresh().
+    self.content_w = self.modal_w - 2 * MARGIN
 
+    -- Frame has zero left/right padding so the title bar separator can run
+    -- edge-to-edge. Each non-title section wraps itself in MARGIN padding
+    -- via the padHorizontal helper inside refresh().
     self.frame = FrameContainer:new{
         bordersize = Size.border.window,
         padding = 0,
-        -- Top padding is supplied by _renderTitleBar's internal span so the
-        -- separator line can extend edge-to-edge without a left/right inset.
         padding_top = 0,
         padding_bottom = MARGIN,
-        padding_left = MARGIN,
-        padding_right = MARGIN,
+        padding_left = 0,
+        padding_right = 0,
         margin = 0,
         radius = Screen:scaleBySize(8),
         background = Blitbuffer.COLOR_WHITE,
@@ -181,9 +184,10 @@ function LibraryModal:_renderTabSegments(title_bar_h)
         return ic
     end
 
+    -- Tabs butt together so they read as one segmented control rather than two
+    -- floating pills (no HorizontalSpan between segments).
     local hg = HorizontalGroup:new{ align = "center" }
-    for i, tab in ipairs(self.config.tabs) do
-        if i > 1 then table.insert(hg, HorizontalSpan:new{ width = Screen:scaleBySize(8) }) end
+    for _i, tab in ipairs(self.config.tabs) do
         local is_active = tab.key == self.active_tab
         table.insert(hg, seg(tab.label, is_active, function() self:_onTabSelect(tab.key) end))
     end
@@ -304,8 +308,11 @@ function LibraryModal:_renderChipStrip(content_width)
             padding = 0,
             padding_left = pad_h, padding_right = pad_h,
             padding_top = pad_v, padding_bottom = pad_v,
-            -- Match tile card radius so chips feel part of the same design language.
-            margin = 0, background = bg, radius = Screen:scaleBySize(4),
+            -- Square corners: with chip_gap=0 the chips share a vertical edge,
+            -- so we square them off to read as one continuous segmented control.
+            -- Rounded outer corners would require per-corner radius which the
+            -- FrameContainer doesn't support.
+            margin = 0, background = bg, radius = 0,
             tw,
         }
         local ic = InputContainer:new{ dimen = Geom:new{ w = fc:getSize().w, h = fc:getSize().h }, fc }
@@ -368,15 +375,17 @@ function LibraryModal:_renderListArea(content_width, area_height)
     local start_idx = (self.page - 1) * rows_per_page + 1
     local end_idx = math.min(start_idx + rows_per_page - 1, total)
 
-    -- Each row slot = card height; gaps between rows are MARGIN. The total area
-    -- is divided so (rows * slot + (rows-1) * MARGIN) == area_height.
+    -- Stack: MARGIN top + (rows × card + (rows-1) × MARGIN inter) + MARGIN bottom.
+    -- row_height divides the content height evenly so cards anchor top-with-margin
+    -- rather than centering and leaving uneven space top/bottom.
     local row_height = math.floor(
-        (area_height - (rows_per_page - 1) * MARGIN) / rows_per_page)
+        (area_height - 2 * MARGIN - (rows_per_page - 1) * MARGIN) / rows_per_page)
     local vg = VerticalGroup:new{ align = "left" }
+    table.insert(vg, VerticalSpan:new{ width = MARGIN })  -- top inset
     for idx = start_idx, end_idx do
         local item = self.config.item_at(idx)
         if item then
-            if #vg > 0 then table.insert(vg, VerticalSpan:new{ width = MARGIN }) end
+            if idx > start_idx then table.insert(vg, VerticalSpan:new{ width = MARGIN }) end
             local slot_dimen = Geom:new{ w = content_width, h = row_height }
             table.insert(vg, self.config.row_renderer(item, slot_dimen))
         end
@@ -388,6 +397,8 @@ function LibraryModal:_renderListArea(content_width, area_height)
             table.insert(vg, VerticalSpan:new{ width = row_height })
         end
     end
+    table.insert(vg, VerticalSpan:new{ width = MARGIN })  -- bottom inset
+    -- Pin to area_height so the modal stays a fixed total size across states.
     return CenterContainer:new{
         dimen = Geom:new{ w = content_width, h = area_height },
         vg,
@@ -564,6 +575,8 @@ function LibraryModal:_renderFooter(content_width)
 end
 
 function LibraryModal:refresh()
+    local Screen = Device.screen
+    local HorizontalGroup = require("ui/widget/horizontalgroup")
     local cw = self.content_w
     -- modal_w is passed so _renderTitleBar can draw an edge-to-edge separator.
     local title = self:_renderTitleBar(cw, self.modal_w)
@@ -572,22 +585,28 @@ function LibraryModal:refresh()
     local pagination = self:_renderPagination(cw)
     local footer = self:_renderFooter(cw)
 
-    -- Count MARGIN gaps between sections below the title bar.
-    -- Baseline (no chips, no footer): title↔search + search↔area + area↔pagination = 3.
-    local n_gaps = 3
-    if chips then n_gaps = n_gaps + 1 end   -- search↔chips↔area replaces search↔area (one extra)
-    if footer then n_gaps = n_gaps + 1 end   -- pagination↔footer
+    -- Sized to fit content rather than a screen fraction, so the dialog isn't
+    -- bigger than necessary. Uses the row renderer's intrinsic card height
+    -- (matches preset_manager's Screen:scaleBySize(64)) so the area accommodates
+    -- exactly rows_per_page cards plus inter/outer MARGIN gaps.
+    local rows_per_page = self.config.rows_per_page or 5
+    local intrinsic_card_h = Screen:scaleBySize(64)
+    local area_height = rows_per_page * intrinsic_card_h
+        + (rows_per_page - 1) * MARGIN  -- gaps between rows
+        + 2 * MARGIN                     -- top + bottom inset
 
-    -- area_height is what's left after chrome and all margins. Constant across
-    -- tab states so the modal never changes size.
-    local area_height = self.modal_h
-        - MARGIN                               -- frame padding_bottom
-        - title:getSize().h
-        - search:getSize().h
-        - (chips and chips:getSize().h or 0)
-        - pagination:getSize().h
-        - (footer and footer:getSize().h or 0)
-        - n_gaps * MARGIN
+    -- Frame's padding_left/right are 0 so the title bar separator runs edge-
+    -- to-edge. Each non-title section is padded with HorizontalSpan(MARGIN)
+    -- on either side so its content sits inside the same MARGIN inset.
+    local function padded(widget)
+        if not widget then return nil end
+        return HorizontalGroup:new{
+            align = "center",
+            HorizontalSpan:new{ width = MARGIN },
+            widget,
+            HorizontalSpan:new{ width = MARGIN },
+        }
+    end
 
     local result_area
     if self.config.cell_renderer then
@@ -598,27 +617,27 @@ function LibraryModal:refresh()
 
     local body = VerticalGroup:new{
         align = "left",
-        title,
+        title,                                       -- spans full modal_w (separator inside)
         VerticalSpan:new{ width = MARGIN },
-        search,
+        padded(search),
         VerticalSpan:new{ width = MARGIN },
     }
     if chips then
-        table.insert(body, chips)
+        table.insert(body, padded(chips))
         table.insert(body, VerticalSpan:new{ width = MARGIN })
     end
-    table.insert(body, result_area)
+    table.insert(body, padded(result_area))
     table.insert(body, VerticalSpan:new{ width = MARGIN })
-    table.insert(body, pagination)
+    table.insert(body, padded(pagination))
     if footer then
         table.insert(body, VerticalSpan:new{ width = MARGIN })
-        table.insert(body, footer)
+        table.insert(body, padded(footer))
     end
 
     self.frame[1] = body
-    -- Modal is fixed-size now, so a self-bounded dirty rect is sufficient.
-    -- Whole-screen repaints stack ~1s each on e-ink and produce visible lag
-    -- when tabs/chips fire two refreshes in quick succession.
+    -- Self-bounded dirty rect is sufficient now that the modal is a fixed,
+    -- content-derived size. setDirty(nil, ...) was triggering full-screen
+    -- repaints that stacked ~1s each on e-ink.
     UIManager:setDirty(self, "ui")
 end
 
