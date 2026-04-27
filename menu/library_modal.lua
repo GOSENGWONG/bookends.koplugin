@@ -175,7 +175,7 @@ function LibraryModal:_renderSearchInput(content_width)
     local placeholder = self.config.search_placeholder
         and self.config.search_placeholder(self.active_tab)
         or _("Search…")
-    local label_text = self.search_query and (self.search_query) or placeholder
+    local label_text = self.search_query or placeholder
     local label_color = self.search_query and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_DARK_GRAY
     local label = TextWidget:new{
         text = label_text,
@@ -245,7 +245,6 @@ function LibraryModal:_renderChipStrip(content_width)
     local Font = require("ui/font")
     local GestureRange = require("ui/gesturerange")
     local HorizontalGroup = require("ui/widget/horizontalgroup")
-    local HorizontalSpan = require("ui/widget/horizontalspan")
     local TextWidget = require("ui/widget/textwidget")
     local Screen = Device.screen
 
@@ -344,7 +343,6 @@ function LibraryModal:_renderListArea(content_width, area_height)
     end
     local rendered = end_idx - start_idx + 1
     if rendered < rows_per_page then
-        local Spacer = require("ui/widget/spacer")
         for _i = rendered + 1, rows_per_page do
             table.insert(vg, VerticalSpan:new{ width = row_height })
         end
@@ -405,7 +403,6 @@ function LibraryModal:_renderPagination(content_width)
     local Button = require("ui/widget/button")
     local Font = require("ui/font")
     local HorizontalGroup = require("ui/widget/horizontalgroup")
-    local HorizontalSpan = require("ui/widget/horizontalspan")
     local TextWidget = require("ui/widget/textwidget")
     local T = require("ffi/util").template
 
@@ -427,6 +424,11 @@ function LibraryModal:_renderPagination(content_width)
             enabled = enabled,
         }
     end
+    local function gap()
+        -- KOReader requires a fresh widget instance per slot; sharing one alias
+        -- across multiple HorizontalGroup positions corrupts paint geometry.
+        return HorizontalSpan:new{ width = Device.screen:scaleBySize(20) }
+    end
 
     local first = chev("\xE2\x80\xB9\xE2\x80\xB9", function() self.page = 1; self:refresh() end, self.page > 1)
     local prev  = chev("\xE2\x80\xB9", function() self.page = self.page - 1; self:refresh() end, self.page > 1)
@@ -436,9 +438,8 @@ function LibraryModal:_renderPagination(content_width)
     }
     local nxt = chev("\xE2\x80\xBA", function() self.page = self.page + 1; self:refresh() end, self.page < total_pages)
     local last = chev("\xE2\x80\xBA\xE2\x80\xBA", function() self.page = total_pages; self:refresh() end, self.page < total_pages)
-    local gap = HorizontalSpan:new{ width = Device.screen:scaleBySize(20) }
 
-    return HorizontalGroup:new{ align = "center", first, gap, prev, gap, pageinfo, gap, nxt, gap, last }
+    return HorizontalGroup:new{ align = "center", first, gap(), prev, gap(), pageinfo, gap(), nxt, gap(), last }
 end
 
 function LibraryModal:_renderFooter(content_width)
@@ -448,6 +449,12 @@ function LibraryModal:_renderFooter(content_width)
     local LineWidget = require("ui/widget/linewidget")
 
     local actions = self.config.footer_actions or {}
+    if #actions == 0 then return nil end
+
+    -- Width must be passed at construction; Button bakes it into inner
+    -- containers in :init, so post-assigning self.width has no effect.
+    local btn_width = #actions > 1 and math.floor(content_width / #actions) or content_width
+
     local btns = {}
     for _i, action in ipairs(actions) do
         local enabled = true
@@ -458,21 +465,16 @@ function LibraryModal:_renderFooter(content_width)
             bold = action.primary == true,
             bordersize = 0,
             radius = 0,
+            width = btn_width,
             callback = function() if enabled then action.on_tap() end end,
             enabled = enabled,
         })
     end
 
-    if #btns == 0 then return nil end
-
-    if #btns == 1 then
-        return btns[1]
-    end
+    if #btns == 1 then return btns[1] end
 
     local hg = HorizontalGroup:new{ align = "center" }
-    local btn_width = math.floor(content_width / #btns)
     for i, btn in ipairs(btns) do
-        btn.width = btn_width
         if i > 1 then
             table.insert(hg, LineWidget:new{
                 background = Blitbuffer.COLOR_DARK_GRAY,
