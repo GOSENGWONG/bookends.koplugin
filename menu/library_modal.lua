@@ -10,10 +10,12 @@ local CenterContainer = require("ui/widget/container/centercontainer")
 local Device = require("device")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
+local HorizontalSpan = require("ui/widget/horizontalspan")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local Size = require("ui/size")
 local UIManager = require("ui/uimanager")
 local VerticalGroup = require("ui/widget/verticalgroup")
+local VerticalSpan = require("ui/widget/verticalspan")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("bookends_i18n").gettext
 
@@ -54,11 +56,9 @@ end
 function LibraryModal:_renderTitleBar(content_width)
     local Font = require("ui/font")
     local HorizontalGroup = require("ui/widget/horizontalgroup")
-    local HorizontalSpan = require("ui/widget/horizontalspan")
     local LeftContainer = require("ui/widget/container/leftcontainer")
     local LineWidget = require("ui/widget/linewidget")
     local TextWidget = require("ui/widget/textwidget")
-    local Screen = Device.screen
 
     local title_w = TextWidget:new{
         text = self.config.title,
