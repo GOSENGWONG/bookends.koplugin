@@ -327,9 +327,33 @@ local function renderPresetCard(self, item, slot_dimen)
             is_virtual   = item.is_virtual or false,
         })
     else
-        -- Gallery tab
-        local is_selected = self.previewing and self.previewing.kind == "gallery"
-            and self.previewing.entry and self.previewing.entry.slug == item.slug
+        -- Gallery tab: highlighted if currently previewed, or if the gallery
+        -- entry's name matches the active local preset (mirrors local-tab
+        -- behaviour so the user can see which gallery preset they're already
+        -- running when they open the tab for the first time).
+        local is_selected
+        if self.previewing and self.previewing.kind == "gallery"
+           and self.previewing.entry and self.previewing.entry.slug == item.slug then
+            is_selected = true
+        else
+            -- Resolve once per render cycle; reuse across cards via self cache.
+            if self._active_preset_name == nil then
+                local active_fn = self.bookends:getActivePresetFilename()
+                if active_fn then
+                    local presets = self.bookends:readPresetFiles()
+                    for _i, p in ipairs(presets) do
+                        if p.filename == active_fn then
+                            -- false sentinel prevents repeated lookups when no match.
+                            self._active_preset_name = p.name or false
+                            break
+                        end
+                    end
+                end
+                if self._active_preset_name == nil then self._active_preset_name = false end
+            end
+            is_selected = self._active_preset_name ~= false
+                and self._active_preset_name == item.name
+        end
         local captured = item
         PresetManagerModal._addRow(self, vg_tmp, slot_dimen.w, row_height, font_size, baseline, left_pad, {
             display     = item.name,
@@ -492,6 +516,9 @@ function PresetManagerModal.show(bookends)
     -- nextTick lets any pending dialog dismissal flush before we re-open the modal,
     -- avoiding visual glitches where the dialog's close races the modal's rebuild.
     self.rebuild = function()
+        -- Bust the per-render active-preset-name cache so gallery highlights
+        -- reflect the current active preset after an apply or tab switch.
+        self._active_preset_name = nil
         UIManager:nextTick(function()
             if self.modal_widget and self.modal_widget.refresh then
                 self.modal_widget.page = self.page
