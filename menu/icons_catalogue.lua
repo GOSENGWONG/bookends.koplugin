@@ -20,44 +20,49 @@ local _ = require("bookends_i18n").gettext
 
 local M = {}
 
--- Chip ordering (left-to-right). "all" is the full Nerd Font index; the
--- curated category chips below show smaller hand-picked lists.
 M.CHIPS = {
-    { key = "all",        label = _("All") },
-    { key = "dynamic",    label = _("Dynamic") },
-    { key = "device",     label = _("Device") },
-    { key = "reading",    label = _("Reading") },
-    { key = "time",       label = _("Time") },
-    { key = "status",     label = _("Status") },
-    { key = "symbols",    label = _("Symbols") },
-    { key = "arrows",     label = _("Arrows") },
-    { key = "blocks",     label = _("Blocks") },
+    { key = "all", label = _("All") },
+    { key = "dynamic", label = _("Dynamic") },
+    { key = "device", label = _("Device") },
+    { key = "reading", label = _("Reading") },
+    { key = "time", label = _("Time") },
+    { key = "status", label = _("Status") },
+    { key = "symbols", label = _("Symbols") },
+    { key = "arrows", label = _("Arrows") },
+    { key = "blocks", label = _("Blocks") },
     { key = "separators", label = _("Separators") },
 }
 
 M.CURATED_BY_CHIP = {
-    -- Dynamic icons resolve at render time to a glyph that reflects current
-    -- state (battery level, Wi-Fi status). Labels stay human-written so the
-    -- "(changes with level)" cue is preserved.
     dynamic = {
-        { code = 0xE790, label = _("Battery (changes with level)"), insert_value = "%batt_icon" },
-        { code = 0xECA8, label = _("Wi-Fi (changes with status)"),  insert_value = "%wifi" },
+        { code = 0xE783, label = _("Battery (changes with level)"), insert_value = "%batt_icon" },   -- battery-charging
+        { code = 0xECA8, label = _("Wi-Fi (changes with status)"), insert_value = "%wifi" },   -- wifi
     },
     device = {
-        { code = 0xE778 },   -- battery
-        { code = 0xE783 },   -- battery-charging
         { code = 0xE782 },   -- battery-alert
-        { code = 0xE78D },   -- battery-outline
         { code = 0xECA8 },   -- wifi
         { code = 0xECA9 },   -- wifi-off
         { code = 0xEBA1 },   -- signal
-        { code = 0xEDF1 },   -- network
         { code = 0xE7AE },   -- bluetooth
         { code = 0xE81B },   -- cellphone
         { code = 0xE266 },   -- chip
         { code = 0xECED },   -- disk
         { code = 0xE268 },   -- cloud
         { code = 0xF013 },   -- cog
+        { code = 0xEDA3 },   -- power-plug
+        { code = 0xEDA4 },   -- power-plug-off
+        { code = 0xE9CA },   -- headphones
+        { code = 0xEECC },   -- headphones-off
+        { code = 0xF085 },   -- cogs
+        { code = 0xE7DF },   -- brightness-7
+        { code = 0xE7DD },   -- brightness-5
+        { code = 0xE7E0 },   -- brightness-auto
+        { code = 0xF185 },   -- sun
+        { code = 0xECA7 },   -- white-balance-sunny
+        { code = 0xE7B1 },   -- bluetooth-off
+        { code = 0xE7B0 },   -- bluetooth-connect
+        { code = 0xEA5A },   -- memory
+        { code = 0xEEDA },   -- micro-sd
     },
     reading = {
         { code = 0xE7B9 },   -- book
@@ -72,6 +77,57 @@ M.CURATED_BY_CHIP = {
         { code = 0xEAEA },   -- pencil
         { code = 0xEAE9 },   -- pen
         { code = 0xEB46 },   -- read
+        { code = 0xE766 },   -- audiobook
+        { code = 0xE28A },   -- book-open
+        { code = 0xE28B },   -- book-open-o
+        { code = 0xECD9 },   -- book-open-page-variant
+        { code = 0xECD8 },   -- book-minus
+        { code = 0xE7BC },   -- book-open.1
+        { code = 0xF02D },   -- book.1
+        { code = 0xEE99 },   -- book-unsecure
+        { code = 0xEE98 },   -- book-secure
+        { code = 0xECDA },   -- book-plus
+        { code = 0xE7BB },   -- book-multiple-variant
+        { code = 0xF405 },   -- book.2
+        { code = 0xE7C4 },   -- bookmark-plus
+        { code = 0xE7C3 },   -- bookmark-plus-outline
+        { code = 0xE7C1 },   -- bookmark-music
+        { code = 0xE7C5 },   -- bookmark-remove
+        { code = 0xF02E },   -- bookmark.1
+        { code = 0xF461 },   -- bookmark.2
+        { code = 0xF097 },   -- bookmark_empty
+        { code = 0xEF2C },   -- notebook
+        { code = 0xEA31 },   -- library-books
+        { code = 0xEA9D },   -- note-text
+        { code = 0xF040 },   -- pencil.1
+        { code = 0xEDD1 },   -- feather
+        { code = 0xE97D },   -- format-quote-close
+        { code = 0xEE55 },   -- format-quote-open
+        { code = 0xF453 },   -- quote
+        { code = 0xF10D },   -- quote_left
+        { code = 0xF10E },   -- quote_right
+        { code = 0xF06E },   -- eye_open
+        { code = 0xF070 },   -- eye_close
+        { code = 0xF441 },   -- eye.1
+        { code = 0xEDCE },   -- eye-outline
+        { code = 0xE907 },   -- eye
+        { code = 0xE908 },   -- eye-off
+        { code = 0xEDCF },   -- eye-off-outline
+        { code = 0xEA94 },   -- newspaper
+        { code = 0xF42A },   -- sign-in
+        { code = 0xF426 },   -- sign-out
+        { code = 0xE245 },   -- glass
+        { code = 0xE9A9 },   -- glasses
+        { code = 0xF0E5 },   -- comment_alt
+        { code = 0xF075 },   -- comment.1
+        { code = 0xF41F },   -- comment.2
+        { code = 0xF0E6 },   -- comments_alt
+        { code = 0xE8EF },   -- email-outline
+        { code = 0xE8ED },   -- email
+        { code = 0xEB6B },   -- rss-box
+        { code = 0xE978 },   -- format-list-bulleted
+        { code = 0xEA14 },   -- label
+        { code = 0xEA15 },   -- label-outline
     },
     time = {
         { code = 0xE84F },   -- clock
@@ -87,6 +143,21 @@ M.CURATED_BY_CHIP = {
         { code = 0xEC1A },   -- timer
         { code = 0xEC1E },   -- timer-sand
         { code = 0xEC88 },   -- watch
+        { code = 0xECCD },   -- clock-alert
+        { code = 0xE854 },   -- clock-start
+        { code = 0xF43A },   -- clock.1
+        { code = 0xE853 },   -- clock-out
+        { code = 0xE852 },   -- clock-in
+        { code = 0xE720 },   -- alarm-check
+        { code = 0xF49B },   -- watch.1
+        { code = 0xEDAB },   -- timer-sand-empty
+        { code = 0xEE8A },   -- timer-sand-full
+        { code = 0xE76A },   -- av-timer
+        { code = 0xE808 },   -- camera-timer
+        { code = 0xE9D9 },   -- history
+        { code = 0xEBC4 },   -- speedometer
+        { code = 0xF0E4 },   -- dashboard
+        { code = 0xF463 },   -- dashboard.1
     },
     status = {
         { code = 0xE82B },   -- check
@@ -105,10 +176,6 @@ M.CURATED_BY_CHIP = {
         { code = 0xEB97 },   -- shield
         { code = 0xEE7E },   -- shield-half-full
     },
-    -- Symbols are pure Unicode (suit symbols, dagger, pilcrow, etc.) — they
-    -- aren't in the Nerd Font cmap, so we hand-label them. Check / cross
-    -- have moved to the Status chip where they have richer cmap-named
-    -- variants (check, check-all, check-circle, …).
     symbols = {
         { glyph = "\xE2\x98\xBC", label = _("Sun (outline)") },
         { glyph = "\xE2\x99\xA8", label = _("Hot springs / warmth") },
@@ -119,13 +186,27 @@ M.CURATED_BY_CHIP = {
         { glyph = "\xE2\x98\x85", label = _("Star (filled)") },
         { glyph = "\xE2\x98\x86", label = _("Star (outline)") },
         { glyph = "\xE2\x88\x9E", label = _("Infinity") },
-        { glyph = "\xC2\xA7",     label = _("Section sign") },
-        { glyph = "\xC2\xB6",     label = _("Pilcrow / paragraph") },
+        { glyph = "\xC2\xA7", label = _("Section sign") },
+        { glyph = "\xC2\xB6", label = _("Pilcrow / paragraph") },
         { glyph = "\xE2\x80\xA0", label = _("Dagger") },
         { glyph = "\xE2\x80\xA1", label = _("Double dagger") },
-        { glyph = "\xC2\xA9",     label = _("Copyright") },
+        { glyph = "\xC2\xA9", label = _("Copyright") },
         { glyph = "\xE2\x84\x96", label = _("Numero") },
         { glyph = "\xE2\x9A\xA1", label = _("High voltage") },
+        { code = 0xEE26 },   -- view-parallel
+        { code = 0xE97C },   -- format-paragraph
+        { code = 0xF006 },   -- star_empty
+        { code = 0xF41E },   -- star.2
+        { code = 0xF123 },   -- star_half_empty
+        { code = 0xF121 },   -- code
+        { code = 0xE82B },   -- check
+        { code = 0xE82C },   -- check-all
+        { code = 0xECDF },   -- check-circle
+        { code = 0xF046 },   -- check.1
+        { code = 0xE725 },   -- alert
+        { code = 0xEDBB },   -- alert-decagram
+        { code = 0xEE65 },   -- alert-octagram
+        { code = 0xE7B4 },   -- blur
     },
     arrows = {
         { glyph = "\xE2\x86\x90", label = _("Arrow left") },
@@ -161,26 +242,100 @@ M.CURATED_BY_CHIP = {
         { glyph = "\xE2\x9E\xA4", label = _("Arrowhead right") },
         { glyph = "\xE2\x9F\xB5", label = _("Long arrow left") },
         { glyph = "\xE2\x9F\xB6", label = _("Long arrow right") },
-        { glyph = "\xE2\x96\xB6", label = _("Triangle right") },
-        { glyph = "\xE2\x97\x80", label = _("Triangle left") },
-        { glyph = "\xE2\x96\xB2", label = _("Triangle up") },
-        { glyph = "\xE2\x96\xBC", label = _("Triangle down") },
         { glyph = "\xE2\x80\xB9", label = _("Single angle left") },
         { glyph = "\xE2\x80\xBA", label = _("Single angle right") },
-        { glyph = "\xC2\xAB",     label = _("Double angle left") },
-        { glyph = "\xC2\xBB",     label = _("Double angle right") },
-        { glyph = "\xE2\x98\x9B", label = _("Pointing right (black)") },
-        { glyph = "\xE2\x98\x9E", label = _("Pointing right") },
-        { glyph = "\xE2\x98\x9C", label = _("Pointing left") },
-        { glyph = "\xE2\x98\x9D", label = _("Pointing up") },
-        { glyph = "\xE2\x98\x9F", label = _("Pointing down") },
+        { glyph = "\xC2\xAB", label = _("Double angle left") },
+        { glyph = "\xC2\xBB", label = _("Double angle right") },
+        { code = 0xE740 },   -- arrow-all
+        { code = 0xE741 },   -- arrow-bottom-left
+        { code = 0xE742 },   -- arrow-bottom-right
+        { code = 0xEE91 },   -- arrow-collapse-left
+        { code = 0xEE90 },   -- arrow-collapse-down
+        { code = 0xEE92 },   -- arrow-collapse-right
+        { code = 0xEE93 },   -- arrow-collapse-up
+        { code = 0xE744 },   -- arrow-down
+        { code = 0xEE2C },   -- arrow-down-bold
+        { code = 0xE745 },   -- arrow-down-thick
+        { code = 0xF433 },   -- arrow-down.1
+        { code = 0xED15 },   -- arrow-expand
+        { code = 0xEE94 },   -- arrow-expand-down
+        { code = 0xEE95 },   -- arrow-expand-left
+        { code = 0xEE96 },   -- arrow-expand-right
+        { code = 0xEE97 },   -- arrow-expand-up
+        { code = 0xE74C },   -- arrow-left
+        { code = 0xEE2F },   -- arrow-left-bold
+        { code = 0xE74D },   -- arrow-left-thick
+        { code = 0xF434 },   -- arrow-left.1
+        { code = 0xE753 },   -- arrow-right
+        { code = 0xEE32 },   -- arrow-right-bold
+        { code = 0xE754 },   -- arrow-right-thick
+        { code = 0xF432 },   -- arrow-right.1
+        { code = 0xF479 },   -- arrow-small-down
+        { code = 0xF47A },   -- arrow-small-left
+        { code = 0xF45C },   -- arrow-small-right
+        { code = 0xF478 },   -- arrow-small-up
+        { code = 0xE75A },   -- arrow-top-left
+        { code = 0xE75B },   -- arrow-top-right
+        { code = 0xE75C },   -- arrow-up
+        { code = 0xEE35 },   -- arrow-up-bold
+        { code = 0xE75D },   -- arrow-up-thick
+        { code = 0xF431 },   -- arrow-up.1
+        { code = 0xF063 },   -- arrow_down
+        { code = 0xF060 },   -- arrow_left
+        { code = 0xF061 },   -- arrow_right
+        { code = 0xF062 },   -- arrow_up
+        { code = 0xF0AB },   -- circle_arrow_down
+        { code = 0xF0AA },   -- circle_arrow_up
+        { code = 0xF0A9 },   -- circle_arrow_right
+        { code = 0xF0A8 },   -- circle_arrow_left
+        { code = 0xE9FA },   -- inbox-arrow-down
+        { code = 0xEAD0 },   -- inbox-arrow-up
+        { code = 0xF124 },   -- location_arrow
+        { code = 0xF175 },   -- long_arrow_down
+        { code = 0xF177 },   -- long_arrow_left
+        { code = 0xED0B },   -- subdirectory-arrow-left
+        { code = 0xEB42 },   -- ray-start-arrow
+        { code = 0xEB40 },   -- ray-end-arrow
+        { code = 0xF176 },   -- long_arrow_up
+        { code = 0xF178 },   -- long_arrow_right
+        { code = 0xED0C },   -- subdirectory-arrow-right
+        { code = 0xE9C6 },   -- hand-pointing-right
+        { code = 0xE8B6 },   -- cursor-pointer
+        { code = 0xE83B },   -- chevron-double-down
+        { code = 0xE83C },   -- chevron-double-left
+        { code = 0xE83D },   -- chevron-double-right
+        { code = 0xE83E },   -- chevron-double-up
+        { code = 0xE83F },   -- chevron-down
+        { code = 0xF47C },   -- chevron-down.1
+        { code = 0xE840 },   -- chevron-left
+        { code = 0xF47D },   -- chevron-left.1
+        { code = 0xE841 },   -- chevron-right
+        { code = 0xF460 },   -- chevron-right.1
+        { code = 0xF054 },   -- chevron_right
+        { code = 0xF077 },   -- chevron_up
+        { code = 0xF053 },   -- chevron_left
+        { code = 0xF139 },   -- chevron_sign_up
+        { code = 0xF138 },   -- chevron_sign_right
+        { code = 0xF078 },   -- chevron_down
+        { code = 0xF137 },   -- chevron_sign_left
+        { code = 0xF47B },   -- chevron-up.1
+        { code = 0xE842 },   -- chevron-up
+        { code = 0xF13A },   -- chevron_sign_down
+        { code = 0xEA5D },   -- menu-left
+        { code = 0xEA5E },   -- menu-right
+        { code = 0xE93E },   -- flag-triangle
+        { code = 0xEB3F },   -- ray-end
+        { code = 0xEB41 },   -- ray-start
+        { code = 0xEB43 },   -- ray-start-end
+        { code = 0xEB44 },   -- ray-vertex
+        { code = 0xEDA5 },   -- publish
+        { code = 0xE910 },   -- fast-forward
+        { code = 0xEDD0 },   -- fast-forward-outline
+        { code = 0xF049 },   -- fast_backward
+        { code = 0xF050 },   -- fast_forward
+        { code = 0xECFF },   -- page-first
+        { code = 0xED00 },   -- page-last
     },
-    -- Solid block / shape palette. Designed for hand-rolled progress bars
-    -- assembled with [if:book_pct>X]…[/if] nesting — pairs of filled/empty
-    -- variants let you compose proportional fills, and the eighth-block
-    -- ramps give finer granularity than the four shading levels.
-    -- Eighth-block labels use sequential N/8 (rather than mixing 1/4, 1/2,
-    -- 3/4) so alphabetical sort produces the fill-order ramp.
     blocks = {
         { glyph = "\xE2\x96\x88", label = _("Block (full)") },
         { glyph = "\xE2\x96\x93", label = _("Block (dark)") },
@@ -220,71 +375,34 @@ M.CURATED_BY_CHIP = {
         { glyph = "\xE2\x97\x87", label = _("Diamond (empty)") },
     },
     separators = {
-        { glyph = "|",             label = _("Vertical bar") },
+        { glyph = "|", label = _("Vertical bar") },
         { glyph = "\xE2\x80\xA2", label = _("Bullet") },
-        { glyph = "\xC2\xB7",     label = _("Middle dot") },
+        { glyph = "\xC2\xB7", label = _("Middle dot") },
         { glyph = "\xE2\x8B\xAE", label = _("Vertical ellipsis") },
-        { glyph = "\xE2\x97\x86", label = _("Diamond") },
         { glyph = "\xE2\x80\x94", label = _("Em dash") },
         { glyph = "\xE2\x80\x93", label = _("En dash") },
         { glyph = "\xE2\x80\xA6", label = _("Horizontal ellipsis") },
-        { glyph = "/",             label = _("Slash") },
+        { glyph = "/", label = _("Slash") },
         { glyph = "\xE2\x88\x95", label = _("Division slash") },
         { glyph = "\xE2\x81\x84", label = _("Fraction slash") },
         { glyph = "\xE2\x81\x84\xE2\x81\x84", label = _("Double fraction slash") },
-        { glyph = "~",             label = _("Tilde") },
+        { glyph = "~", label = _("Tilde") },
         { glyph = "\xE2\x80\xA3", label = _("Triangular bullet") },
+        { code = 0xE216 },   -- slash
+        { code = 0xE8D7 },   -- dots-horizontal
+        { code = 0xE8D8 },   -- dots-vertical
+        { code = 0xF444 },   -- primitive-dot
+        { code = 0xF48B },   -- dash
+        { code = 0xF47A },   -- arrow-small-left
+        { code = 0xF45C },   -- arrow-small-right
     },
 }
 
--- Per-chip patterns used to absorb related cmap entries into a curated
--- chip. Plain-substring match against the cmap name (lowercase kebab-
--- case). Patterns are deliberately narrow words that stick close to the
--- chip's theme; widening them risks pulling unrelated brand or UI icons.
 M.PATTERNS_BY_CHIP = {
-    device  = { "battery", "wifi", "wireless", "signal", "bluetooth",
-                "cellphone", "tablet", "laptop", "monitor", "memory",
-                "chip", "disk", "router", "ethernet", "usb",
-                "power-plug", "headphone", "speaker", "cog" },
-    reading = { "book", "library", "note", "pencil", "feather",
-                "format-quote" },
-    time    = { "clock", "alarm", "watch", "hourglass", "calendar",
-                "timer", "history" },
-    status  = { "check", "close", "alert", "info", "shield", "lock",
-                "exclamation", "question", "cancel" },
-    arrows  = { "arrow", "chevron", "menu-down", "menu-up", "menu-left",
-                "menu-right", "triangle" },
+    status = { "check", "close", "alert", "info", "shield", "lock", "exclamation", "question", "cancel" },
 }
 
--- Names matched by a chip's patterns that don't belong there. Substring
--- matching can't distinguish "book" from "facebook"; rather than fight
--- the matcher with anchored patterns (which then miss legitimate hits
--- like "bookmark"), we list the offenders explicitly.
 M.PATTERN_EXCLUDES = {
-    device = {
-        ["incognito"]  = true,
-        ["poker-chip"] = true,
-    },
-    reading = {
-        ["facebook"]                  = true,
-        ["facebook-box"]              = true,
-        ["facebook-messenger"]        = true,
-        ["facebook.1"]                = true,
-        ["facebook_sign"]             = true,
-        ["evernote"]                  = true,
-        ["onenote"]                   = true,
-        ["bookmark-music"]            = true,
-        ["library-music"]             = true,
-        ["music-note"]                = true,
-        ["music-note-bluetooth"]      = true,
-        ["music-note-bluetooth-off"]  = true,
-        ["music-note-eighth"]         = true,
-        ["music-note-half"]           = true,
-        ["music-note-off"]            = true,
-        ["music-note-quarter"]        = true,
-        ["music-note-sixteenth"]      = true,
-        ["music-note-whole"]          = true,
-    },
     status = {
         ["block-helper"] = true,
     },
