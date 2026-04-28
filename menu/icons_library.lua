@@ -187,30 +187,32 @@ IconsLibrary.CURATED_BY_CHIP = {
     -- assembled with [if:book_pct>X]…[/if] nesting — pairs of filled/empty
     -- variants let you compose proportional fills, and the eighth-block
     -- ramps give finer granularity than the four shading levels.
+    -- Eighth-block labels use sequential N/8 (rather than mixing 1/4, 1/2,
+    -- 3/4) so alphabetical sort produces the fill-order ramp.
     blocks = {
         -- Full blocks and shading
         { glyph = "\xE2\x96\x88", label = _("Block (full)") },
         { glyph = "\xE2\x96\x93", label = _("Block (dark)") },
         { glyph = "\xE2\x96\x92", label = _("Block (medium)") },
         { glyph = "\xE2\x96\x91", label = _("Block (light)") },
-        -- Half blocks
+        -- Upper / right half blocks (no eighth ramp in these directions)
         { glyph = "\xE2\x96\x80", label = _("Upper half block") },
-        { glyph = "\xE2\x96\x84", label = _("Lower half block") },
-        { glyph = "\xE2\x96\x8C", label = _("Left half block") },
         { glyph = "\xE2\x96\x90", label = _("Right half block") },
-        -- Lower N/8 ramp
+        -- Lower N/8 ramp (sequential 1/8 → 7/8; 4/8 = lower half)
         { glyph = "\xE2\x96\x81", label = _("Lower 1/8 block") },
-        { glyph = "\xE2\x96\x82", label = _("Lower 1/4 block") },
+        { glyph = "\xE2\x96\x82", label = _("Lower 2/8 block") },
         { glyph = "\xE2\x96\x83", label = _("Lower 3/8 block") },
+        { glyph = "\xE2\x96\x84", label = _("Lower 4/8 block") },
         { glyph = "\xE2\x96\x85", label = _("Lower 5/8 block") },
-        { glyph = "\xE2\x96\x86", label = _("Lower 3/4 block") },
+        { glyph = "\xE2\x96\x86", label = _("Lower 6/8 block") },
         { glyph = "\xE2\x96\x87", label = _("Lower 7/8 block") },
-        -- Left N/8 ramp (right-to-left fill)
+        -- Left N/8 ramp (right-to-left fill; 4/8 = left half)
         { glyph = "\xE2\x96\x8F", label = _("Left 1/8 block") },
-        { glyph = "\xE2\x96\x8E", label = _("Left 1/4 block") },
+        { glyph = "\xE2\x96\x8E", label = _("Left 2/8 block") },
         { glyph = "\xE2\x96\x8D", label = _("Left 3/8 block") },
+        { glyph = "\xE2\x96\x8C", label = _("Left 4/8 block") },
         { glyph = "\xE2\x96\x8B", label = _("Left 5/8 block") },
-        { glyph = "\xE2\x96\x8A", label = _("Left 3/4 block") },
+        { glyph = "\xE2\x96\x8A", label = _("Left 6/8 block") },
         { glyph = "\xE2\x96\x89", label = _("Left 7/8 block") },
         -- Squares and rectangles
         { glyph = "\xE2\x96\xA0", label = _("Square (filled)") },
@@ -433,17 +435,16 @@ local function projectCuratedItems(chip_key)
                 out[#out + 1] = cell
             end
         end
-        -- Sort alphabetically across curated + pattern-fill so glyphs
-        -- sharing a prefix (e.g. bluetooth, bluetooth-audio, bluetooth-off)
-        -- stay adjacent instead of scattering between the two ranges.
-        -- Pure-curated chips (Dynamic / Symbols / Blocks / Separators) skip
-        -- the sort to preserve their hand-designed thematic order.
-        table.sort(out, function(a, b)
-            local ka = (a.canonical or a.label or ""):lower()
-            local kb = (b.canonical or b.label or ""):lower()
-            return ka < kb
-        end)
     end
+    -- Sort every chip alphabetically so prefix-related glyphs stay adjacent
+    -- (bluetooth, bluetooth-audio, bluetooth-off — no longer split between
+    -- curated and pattern-fill ranges) and chip behaviour is consistent.
+    -- Block ramp labels use sequential N/8 so alphabetical = fill order.
+    table.sort(out, function(a, b)
+        local ka = (a.canonical or a.label or ""):lower()
+        local kb = (b.canonical or b.label or ""):lower()
+        return ka < kb
+    end)
     _projection_cache[chip_key] = out
     return out
 end
