@@ -34,11 +34,11 @@ M.CHIPS = {
 
 M.CURATED_BY_CHIP = {
     dynamic = {
-        { code = 0xE783, label = _("Battery"),    insert_value = "%batt_icon" },   -- battery-charging
-        { code = 0xECA8, label = _("Wi-Fi"),      insert_value = "%wifi" },         -- wifi
+        { code = 0xE783, label = _("Battery"), insert_value = "%batt_icon" },   -- battery-charging
+        { code = 0xECA8, label = _("Wi-Fi"), insert_value = "%wifi" },   -- wifi
         { code = 0xEDE6, label = _("Frontlight"), insert_value = "%light_icon" },   -- lightbulb-on
-        { code = 0xE20A, label = _("Warmth"),     insert_value = "%warmth_icon" },  -- thermometer
-        { code = 0xEC93, label = _("Night mode"), insert_value = "%nightmode" },    -- weather-night
+        { code = 0xE20A, label = _("Warmth"), insert_value = "%warmth_icon" },   -- thermometer
+        { code = 0xEC93, label = _("Night mode"), insert_value = "%nightmode" },   -- weather-night
     },
     device = {
         { code = 0xE782 },   -- battery-alert
@@ -181,7 +181,6 @@ M.CURATED_BY_CHIP = {
         { glyph = "\xC2\xB6", label = _("Pilcrow / paragraph") },
         { glyph = "\xE2\x80\xA0", label = _("Dagger") },
         { glyph = "\xE2\x80\xA1", label = _("Double dagger") },
-        { glyph = "\xC2\xA9", label = _("Copyright") },
         { glyph = "\xE2\x84\x96", label = _("Numero") },
         { glyph = "\xE2\x9A\xA1", label = _("High voltage") },
         { code = 0xEE26 },   -- view-parallel
@@ -205,6 +204,8 @@ M.CURATED_BY_CHIP = {
         { code = 0xEEB2 },   -- chili-mild
         { code = 0xEEB1 },   -- chili-medium
         { code = 0xEEB0 },   -- chili-hot
+        { code = 0xE273 },   -- donut
+        { code = 0xECE5 },   -- copyright
     },
     arrows = {
         { glyph = "\xE2\x86\x90", label = _("Arrow left") },
