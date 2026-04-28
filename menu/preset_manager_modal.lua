@@ -1281,6 +1281,47 @@ local function serializePresetForSubmission(preset_entry)
     return header .. "return " .. PresetManager.serializeTable(preset_entry.preset) .. "\n"
 end
 
+-- Submit-flow rename helper: same effect as the standard rename action (file
+-- on disk + cycle list + active-preset bookkeeping) but takes a callback so
+-- the gate can re-enter the submit flow once the user picks a real name. The
+-- explanatory `message` argument tells the user *why* a rename is being asked
+-- for, which differs from a cold rename initiated from the manage menu.
+local function promptRenameAndContinue(self, entry, message, on_done)
+    local dlg
+    dlg = InputDialog:new{
+        title       = _("Rename before sharing"),
+        description = message,
+        input       = entry.name,
+        buttons = {{
+            { text = _("Cancel"), id = "close",
+              callback = function() UIManager:close(dlg) end },
+            { text = _("Rename"), is_enter_default = true, callback = function()
+                local new_name = dlg:getInputText()
+                if new_name and new_name ~= "" and new_name ~= entry.name then
+                    local new_filename = self.bookends:renamePresetFile(entry.filename, new_name)
+                    if new_filename then
+                        local cycle = self.bookends.settings:readSetting("preset_cycle") or {}
+                        for i, f in ipairs(cycle) do
+                            if f == entry.filename then cycle[i] = new_filename; break end
+                        end
+                        self.bookends.settings:saveSetting("preset_cycle", cycle)
+                        if self.bookends:getActivePresetFilename() == entry.filename then
+                            self.bookends:setActivePresetFilename(new_filename)
+                        end
+                        entry.filename = new_filename
+                        entry.name     = new_name
+                        if entry.preset then entry.preset.name = new_name end
+                    end
+                end
+                UIManager:close(dlg)
+                if on_done then on_done() end
+            end },
+        }},
+    }
+    UIManager:show(dlg)
+    dlg:onShowKeyboard()
+end
+
 -- Wrap the submit flow in xpcall so any unhandled error surfaces as a
 -- notification rather than crashing the overlay. The submit path runs rarely
 -- and shuttles between several dialogs; easy place for regressions.
@@ -1305,6 +1346,31 @@ local function submitToGalleryImpl(self, entry)
     end
     if needsField("description") then
         editMetadataField(self, entry, "description", _("One-line description of this preset"),
+            function() PresetManagerModal._submitToGallery(self, entry) end)
+        return
+    end
+
+    -- Default-content gates: catch placeholder name/description that the
+    -- plugin auto-generates (migration default "My setup", new-preset default
+    -- "Untitled[ N]", migration description). Both English source string and
+    -- current-locale translation are checked, so a Spanish KOReader's
+    -- "Mi configuración" is also gated. See preset_naming.lua for predicates.
+    local PresetNaming = require("preset_naming")
+    local default_names = { "My setup", _("My setup") }
+    local untitled_prefixes = { "Untitled", _("Untitled") }
+    local default_descriptions = {
+        "Imported from your earlier Bookends settings",
+        _("Imported from your earlier Bookends settings"),
+    }
+    if PresetNaming.looksLikeDefaultName(data.name, default_names, untitled_prefixes) then
+        promptRenameAndContinue(self, entry,
+            T(_("'%1' is one of Bookends' default placeholder names. Give your preset something distinctive — that's how it'll appear in the gallery."), data.name),
+            function() PresetManagerModal._submitToGallery(self, entry) end)
+        return
+    end
+    if PresetNaming.looksLikeDefaultDescription(data.description, default_descriptions) then
+        editMetadataField(self, entry, "description",
+            _("Write a short description that tells gallery users what your preset shows"),
             function() PresetManagerModal._submitToGallery(self, entry) end)
         return
     end
