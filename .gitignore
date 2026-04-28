@@ -5,3 +5,6 @@ docs/
 .DS_Store
 tools/submit-worker/node_modules/
 .claude/
+
+tools/.curator_scratch.json
+tools/__pycache__/
