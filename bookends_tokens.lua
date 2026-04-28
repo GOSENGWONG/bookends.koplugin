@@ -612,8 +612,19 @@ function Tokens.buildConditionState(ui, session_elapsed, session_pages_read, pai
         state.batt = powerd:getCapacity() or 0
         state.charging = (powerd:isCharging() or powerd:isCharged()) and "yes" or "no"
         state.light = powerd:frontlightIntensity() > 0 and "on" or "off"
+        if powerd.fl_max and powerd.fl_max > 0 then
+            -- 0-100 percentage of frontlight intensity; the device-native
+            -- range varies (Kindle 0-24, Kobo 0-100, generic 0-10), so
+            -- normalise via fl_max for cross-device conditionals.
+            state.light_pct = math.floor(
+                powerd:frontlightIntensity() / powerd.fl_max * 100 + 0.5)
+        end
         if Device:hasNaturalLight() and powerd.frontlightWarmth then
+            -- state.warmth keeps the device-native value (0-24 on Kindle)
+            -- for users with conditionals tied to that scale; warmth_pct
+            -- is the normalised 0-100 frontlightWarmth() return value.
             state.warmth = powerd:toNativeWarmth(powerd:frontlightWarmth())
+            state.warmth_pct = math.floor(powerd:frontlightWarmth() + 0.5)
         end
     end
 
@@ -625,6 +636,11 @@ function Tokens.buildConditionState(ui, session_elapsed, session_pages_read, pai
         or G:isTrue("input_invert_right_page_turn_keys")
         or (ui.view and ui.view.inverse_reading_order)
     state.invert = page_turn_inverted and "yes" or "no"
+
+    -- Night mode (driven by KOReader's persistent "night_mode" setting,
+    -- toggled via the Toggle night mode action — same source as
+    -- ToggleNightMode handlers in devicelistener.lua).
+    state.night = G_reader_settings:isTrue("night_mode") and "on" or "off"
 
     -- Page-based state
     local pageno = ui.view and ui.view.state and ui.view.state.page
@@ -1106,7 +1122,9 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             batt = "[batt]", batt_icon = "[batt]", wifi = "[wifi]",
             plugin_content = "[plugins]",
             invert = "[invert]",
-            light = "[light]", warmth = "[warmth]",
+            light = "[light]", light_icon = "[light]", light_pct = "[light]",
+            warmth = "[warmth]", warmth_pct = "[warmth]", warmth_icon = "[warmth]",
+            nightmode = "[night]",
             mem = "[mem]", ram = "[rss]",
             disk = "[disk]",
             bar = "\xE2\x96\xB0\xE2\x96\xB0\xE2\x96\xB1\xE2\x96\xB1",  -- ▰▰▱▱
@@ -1640,6 +1658,69 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         end
     end
 
+    -- Frontlight on/off icon (dynamic). Lightbulb-on glyph (rays) when
+    -- frontlight is on, lightbulb-outline (empty) when off.
+    local light_symbol = ""
+    if needs("light_icon") then
+        local powerd = Device:getPowerDevice()
+        if powerd and powerd:frontlightIntensity() > 0 then
+            light_symbol = "\xEE\xB7\xA6" -- U+EDE6 lightbulb-on
+        else
+            light_symbol = "\xEE\xA8\xB5" -- U+EA35 lightbulb-outline
+        end
+    end
+
+    -- Night mode icon (dynamic). Moon glyph when night mode is active,
+    -- sun glyph otherwise. Driven by KOReader's "night_mode" setting.
+    local night_symbol = ""
+    if needs("nightmode") then
+        if G_reader_settings:isTrue("night_mode") then
+            night_symbol = "\xEE\xB2\x93" -- U+EC93 weather-night
+        else
+            night_symbol = "\xEE\xB2\x98" -- U+EC98 weather-sunny
+        end
+    end
+
+    -- Frontlight intensity as a 0-100 percentage. Returns just the
+    -- number (no "%" suffix) to match the %book_pct convention.
+    local fl_intensity_pct = ""
+    if needs("light_pct") then
+        local pwd = Device:getPowerDevice()
+        if pwd and pwd.fl_max and pwd.fl_max > 0 then
+            fl_intensity_pct = tostring(math.floor(
+                pwd:frontlightIntensity() / pwd.fl_max * 100 + 0.5))
+        end
+    end
+
+    -- Frontlight warmth as a 0-100 percentage. frontlightWarmth() is
+    -- already in the KOReader 0-100 scale (powerd.lua:243), so no
+    -- division is needed.
+    local fl_warmth_pct = ""
+    if needs("warmth_pct") then
+        local pwd = Device:getPowerDevice()
+        if pwd and Device:hasNaturalLight() then
+            fl_warmth_pct = tostring(math.floor(pwd:frontlightWarmth() + 0.5))
+        end
+    end
+
+    -- Warmth icon (dynamic). Three-step ramp: thermometer-low for cool
+    -- (<34%), thermometer for mid (34-66%), thermometer-high for warm
+    -- (≥67%). Empty when the device has no natural-light hardware.
+    local warmth_symbol = ""
+    if needs("warmth_icon") then
+        local pwd = Device:getPowerDevice()
+        if pwd and Device:hasNaturalLight() then
+            local pct = pwd:frontlightWarmth()
+            if pct < 34 then
+                warmth_symbol = "\xEE\x88\x8C" -- U+E20C thermometer-low
+            elseif pct < 67 then
+                warmth_symbol = "\xEE\x88\x8A" -- U+E20A thermometer
+            else
+                warmth_symbol = "\xEE\x88\x8B" -- U+E20B thermometer-high
+            end
+        end
+    end
+
     -- Aggregate output from plugins that register with KOReader's footer
     -- extension API (ReaderFooter:addAdditionalFooterContent at
     -- readerfooter.lua:2076). Examples: kobo.koplugin (Bluetooth icon),
@@ -1808,7 +1889,12 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         wifi      = wifi_symbol,
         plugin_content = plugin_content,
         light     = fl_intensity,
+        light_icon = light_symbol,
+        light_pct = fl_intensity_pct,
         warmth    = fl_warmth,
+        warmth_pct = fl_warmth_pct,
+        warmth_icon = warmth_symbol,
+        nightmode = night_symbol,
         mem       = tostring(mem_usage),
         ram       = ram_mb,
         disk      = disk_avail,

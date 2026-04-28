@@ -39,7 +39,7 @@ function LineEditor.attach(Bookends)
 
     function Bookends:editLineString(pos, line_idx, touchmenu_instance)
         local restoreMenu = self:hideMenu(touchmenu_instance)
-        local IconPicker = require("bookends_icon_picker")
+        local IconsLibrary = require("menu.icons_library")
 
         local pos_settings = self.positions[pos.key]
 
@@ -336,10 +336,10 @@ function LineEditor.attach(Bookends)
                     end,
                 },
                 {
-                    text = _("Symbols"),
+                    text = _("Icons"),
                     callback = function()
                         format_dialog:onCloseKeyboard()
-                        IconPicker:show(function(value)
+                        IconsLibrary:show(function(value)
                             format_dialog:addTextToInput(value)
                         end)
                     end,
@@ -348,7 +348,8 @@ function LineEditor.attach(Bookends)
                     text = _("Tokens"),
                     callback = function()
                         format_dialog:onCloseKeyboard()
-                        self:showTokenPicker(function(token)
+                        local TokensLibrary = require("menu.tokens_library")
+                        TokensLibrary:show(self, function(token)
                             format_dialog:addTextToInput(token)
                         end)
                     end,
