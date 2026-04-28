@@ -372,6 +372,11 @@ function LibraryModal:_renderSearchInput(content_width)
             UIManager:setDirty(self, "ui")
             return r
         end
+        -- Slightly rounded corners on the input border distinguish the
+        -- search row from the segmented (square) chip strip below. The
+        -- inner FrameContainer is what InputText renders the border
+        -- through (inputtext.lua:569), so set radius there before paint.
+        input._frame_textwidget.radius = Size.radius.default
     else
         local desired = self.search_query or ""
         if self._search_input:getText() ~= desired then
@@ -391,7 +396,11 @@ function LibraryModal:_renderSearchInput(content_width)
             padding = 0,
             padding_left = btn_pad_h, padding_right = btn_pad_h,
             padding_top = 0, padding_bottom = 0,
-            margin = 0, radius = 0,
+            margin = 0,
+            -- Slightly rounded corners — same radius as the InputText so
+            -- the search row reads as a unit, distinct from the square
+            -- (segmented) chip strip below.
+            radius = Size.radius.default,
             background = Blitbuffer.COLOR_WHITE,
             CenterContainer:new{
                 dimen = Geom:new{ w = btn_w - 2 * btn_pad_h - 2 * input_border, h = inner_h },
@@ -659,7 +668,11 @@ function LibraryModal:_renderGridArea(content_width, area_height)
         if #vg > 0 then table.insert(vg, VerticalSpan:new{ width = MARGIN }) end
         table.insert(vg, hg)
     end
-    return CenterContainer:new{
+    -- Top-align the grid: a partially-filled page (e.g. Dynamic with 4
+    -- entries in a 9-cell grid) shouldn't float in the vertical centre
+    -- of the area; users expect the content to start at the top.
+    local TopContainer = require("ui/widget/container/topcontainer")
+    return TopContainer:new{
         dimen = Geom:new{ w = content_width, h = area_height },
         vg,
     }

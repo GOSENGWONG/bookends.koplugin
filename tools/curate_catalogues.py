@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Bookends icon curator — localhost web editor for menu/icons_catalogue.lua.
-
-Loads the current chip definitions, curated picks, pattern-fill rules,
-and per-chip excludes; renders them in a browser tab with the actual
-Nerd Font glyph for every icon; on Save writes a regenerated catalogue
-file back to disk.
+"""Bookends catalogue curator — localhost web editor for the icons and
+tokens libraries. Toggle between Icons mode (chips + curated picks +
+pattern-fill rules + excludes; cmap-driven) and Tokens mode (chips +
+regular tokens + conditional templates; hand-written entries).
 
 Usage:
-    python3 tools/curate_icons.py [--port 8765] [--no-browser]
+    python3 tools/curate_catalogues.py [--port 8765] [--no-browser]
 """
 
 import argparse
@@ -25,7 +23,8 @@ import webbrowser
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CATALOGUE_PATH = REPO_ROOT / "menu" / "icons_catalogue.lua"
+ICONS_CATALOGUE_PATH = REPO_ROOT / "menu" / "icons_catalogue.lua"
+TOKENS_CATALOGUE_PATH = REPO_ROOT / "menu" / "tokens_catalogue.lua"
 SYMBOLS_TTF = Path("/usr/lib/koreader/fonts/nerdfonts/symbols.ttf")
 SCRATCH_PATH = REPO_ROOT / "tools" / ".curator_scratch.json"
 
@@ -38,7 +37,8 @@ package.preload["bookends_i18n"] = function()
     return { gettext = function(s) return s end }
 end
 
-local catalogue = require("menu.icons_catalogue")
+local icons = require("menu.icons_catalogue")
+local tokens = require("menu.tokens_catalogue")
 local names = require("bookends_nerdfont_names")
 
 local function encode_string(s)
@@ -75,17 +75,27 @@ local function encode(v)
 end
 
 print(encode({
-    chips = catalogue.CHIPS,
-    curated = catalogue.CURATED_BY_CHIP,
-    patterns = catalogue.PATTERNS_BY_CHIP,
-    excludes = catalogue.PATTERN_EXCLUDES,
+    icons = {
+        chips = icons.CHIPS,
+        curated = icons.CURATED_BY_CHIP,
+        patterns = icons.PATTERNS_BY_CHIP,
+        excludes = icons.PATTERN_EXCLUDES,
+    },
+    tokens = {
+        chips = tokens.CHIPS,
+        tokens = tokens.TOKENS,
+        conditionals = tokens.CONDITIONALS,
+    },
     cmap = names,
 }))
 '''
 
 
-def load_catalogue():
-    """Run lua to dump catalogue + cmap as JSON."""
+def load_data():
+    """Run lua to dump both catalogues + cmap as JSON. Returns:
+        { icons: {chips, curated, patterns, excludes},
+          tokens: {chips, tokens, conditionals},
+          cmap: [{name, code}, ...] }"""
     with tempfile.NamedTemporaryFile("w", suffix=".lua", delete=False) as f:
         f.write(DUMP_LUA)
         dump_path = f.name
@@ -116,7 +126,7 @@ def lua_string_literal(s):
     return ''.join(out)
 
 
-def render_lua(catalogue, cmap):
+def render_icons_lua(catalogue, cmap):
     """Build the new icons_catalogue.lua source from a JSON catalogue."""
     names_by_code = {e["code"]: e["name"] for e in cmap}
 
@@ -210,10 +220,74 @@ def render_lua(catalogue, cmap):
     return '\n'.join(lines)
 
 
+def render_tokens_lua(catalogue):
+    """Build the new tokens_catalogue.lua source from a JSON catalogue.
+
+    catalogue shape:
+      { chips: [{key, label}, ...],
+        tokens: [{description, token, chip, [is_snippet]}, ...],
+        conditionals: [{description, expression, chip}, ...] }
+    """
+    lines = []
+    lines.append('--- Tokens library catalogue: chip definitions, regular tokens, and')
+    lines.append('--- conditional templates. Data-only — projection (chip filtering, search)')
+    lines.append('--- and rendering live in menu/tokens_library.lua.')
+    lines.append('---')
+    lines.append('--- Edit by hand or via the curator web app at tools/curate_catalogues.py.')
+    lines.append('--- The curator overwrites this whole file on save, so any structural')
+    lines.append('--- changes (new tables, helpers) belong in menu/tokens_library.lua.')
+    lines.append('---')
+    lines.append('--- Entry shapes:')
+    lines.append('---   TOKENS:       { description, token, chip, [is_snippet] }')
+    lines.append('---   CONDITIONALS: { description, expression, chip }')
+    lines.append('--- The chip field tags which chip-strip filter shows the entry. "all"')
+    lines.append('--- merges TOKENS + CONDITIONALS for the All view.')
+    lines.append('')
+    lines.append('local _ = require("bookends_i18n").gettext')
+    lines.append('')
+    lines.append('local M = {}')
+    lines.append('')
+
+    lines.append('M.CHIPS = {')
+    for chip in catalogue['chips']:
+        lines.append('    {{ key = {key}, label = _({label}) }},'.format(
+            key=lua_string_literal(chip['key']),
+            label=lua_string_literal(chip['label']),
+        ))
+    lines.append('}')
+    lines.append('')
+
+    def emit_entry(item, value_field):
+        # value_field = "token" or "expression"
+        parts = ['description = _({})'.format(lua_string_literal(item['description']))]
+        parts.append('{} = {}'.format(value_field, lua_string_literal(item[value_field])))
+        parts.append('chip = {}'.format(lua_string_literal(item['chip'])))
+        if item.get('is_snippet'):
+            parts.append('is_snippet = true')
+        lines.append('    {{ {} }},'.format(', '.join(parts)))
+
+    lines.append('M.TOKENS = {')
+    for item in catalogue['tokens']:
+        emit_entry(item, 'token')
+    lines.append('}')
+    lines.append('')
+
+    lines.append('M.CONDITIONALS = {')
+    for item in catalogue['conditionals']:
+        emit_entry(item, 'expression')
+    lines.append('}')
+    lines.append('')
+
+    lines.append('return M')
+    lines.append('')
+    return '\n'.join(lines)
+
+
 # Static markup only — every place dynamic data flows in (chip labels,
-# cmap names, pattern lines) goes through DOM construction or the `esc`
-# helper, never raw template interpolation, so untrusted strings can't
-# inject markup if a label or pattern ever contains HTML.
+# cmap names, pattern lines, token descriptions) goes through DOM
+# construction or the `esc` helper, never raw template interpolation,
+# so untrusted strings can't inject markup if a label or pattern ever
+# contains HTML.
 INDEX_HTML = r"""<!doctype html>
 <html lang="en">
 <head>
@@ -324,11 +398,53 @@ textarea {
 }
 .dirty { color: #c2410c; font-weight: 600; }
 .clean { color: #16a34a; }
+.modes {
+    display: inline-flex; border: 1px solid #ccc; border-radius: 4px;
+    overflow: hidden;
+}
+.modes button {
+    border: 0; padding: 6px 14px; background: #fff; border-radius: 0;
+    border-right: 1px solid #ccc;
+}
+.modes button:last-child { border-right: 0; }
+.modes button.active { background: #2563eb; color: #fff; }
+.token-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+}
+.token-row:last-child { border-bottom: 0; }
+.token-row .col {
+    display: flex; flex-direction: column; gap: 4px;
+}
+.token-row .col.desc { flex: 1.2; }
+.token-row .col.code { flex: 1.5; }
+.token-row label {
+    font-size: 10px; text-transform: uppercase; color: #888;
+    letter-spacing: 0.5px;
+}
+.token-row textarea, .token-row input[type="text"] {
+    width: 100%; padding: 6px 8px; border: 1px solid #ddd;
+    border-radius: 4px; font-size: 13px; font-family: inherit;
+    resize: vertical; min-height: 32px;
+}
+.token-row textarea.code, .token-row input.code {
+    font-family: "SF Mono", Menlo, monospace;
+}
+.token-row .actions {
+    display: flex; flex-direction: column; gap: 4px; padding-top: 18px;
+}
+.token-row .actions button {
+    padding: 4px 8px; font-size: 12px;
+}
 </style>
 </head>
 <body>
 <div class="topbar">
-    <h1>Bookends icon curator</h1>
+    <h1>Bookends catalogue curator</h1>
+    <span class="modes">
+        <button id="mode-icons" class="active">Icons</button>
+        <button id="mode-tokens">Tokens</button>
+    </span>
     <span class="status" id="status">Loading…</span>
     <button id="reset">Discard changes</button>
     <button id="apply" class="primary">Save catalogue</button>
@@ -338,7 +454,7 @@ textarea {
     <section class="detail" id="detail"></section>
 </main>
 <div class="statusbar">
-    <span>Catalogue file: <code>menu/icons_catalogue.lua</code></span>
+    <span>Catalogue file: <code id="catalogue-path">menu/icons_catalogue.lua</code></span>
     <span style="flex:1"></span>
     <span id="apply-result"></span>
 </div>
@@ -362,14 +478,22 @@ textarea {
 const PATTERN_CHIPS = ['device','reading','time','status','arrows'];
 
 const state = {
-    catalogue: null,
+    mode: 'icons',           // 'icons' | 'tokens'
+    icons: null,             // { chips, curated, patterns, excludes }
+    tokens: null,            // { chips, tokens, conditionals }
     cmap: null,
     cmapByCode: {},
-    activeChip: 'all',
+    activeChipByMode: { icons: 'all', tokens: 'all' },
     dirty: false,
     pickerSearch: '',
-    pickerTarget: null,
+    pickerTarget: null,      // for icons mode: target chip key for adding cmap entry
+    pickerMode: 'add-icon',  // 'add-icon' | 'insert-glyph'
+    pickerInsertCallback: null,  // for tokens-mode insert-glyph workflow
 };
+
+function activeChip() { return activeChip()ByMode[state.mode]; }
+function setActiveChip(k) { activeChip()ByMode[state.mode] = k; }
+function activeCatalogue() { return state.mode === 'icons' ? state.icons : state.tokens; }
 
 // ---- Utilities ----------------------------------------------------------
 
@@ -402,9 +526,9 @@ function nameMatchesAny(name, patterns, excludes) {
 
 function projectChip(key) {
     if (key === 'all') return state.cmap.slice();
-    const curated = state.catalogue.curated[key] || [];
-    const patterns = state.catalogue.patterns[key] || [];
-    const excludes = state.catalogue.excludes[key] || {};
+    const curated = activeCatalogue().curated[key] || [];
+    const patterns = activeCatalogue().patterns[key] || [];
+    const excludes = activeCatalogue().excludes[key] || {};
     const seen = new Set();
     const out = [];
     for (const item of curated) {
@@ -455,10 +579,12 @@ let autosaveTimer = null;
 function autosave() {
     clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(async () => {
+        // Save both catalogues so a tab close in either mode preserves
+        // the other mode's pending edits too.
         await fetch('/api/save', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(state.catalogue),
+            body: JSON.stringify({ icons: state.icons, tokens: state.tokens }),
         });
     }, 500);
 }
@@ -500,22 +626,25 @@ function el(tag, props, ...children) {
 const HIDDEN_CHIPS = new Set(['dynamic']);
 
 function visibleChips() {
-    return state.catalogue.chips.filter(c => !HIDDEN_CHIPS.has(c.key));
+    return activeCatalogue().chips.filter(c => !HIDDEN_CHIPS.has(c.key));
+}
+
+function chipCount(chipKey) {
+    if (state.mode === 'tokens') return tokenChipCount(chipKey);
+    if (chipKey === 'all') return state.cmap.length;
+    return projectChip(chipKey).length;
 }
 
 function renderChips() {
     const nav = document.getElementById('chips');
     clearChildren(nav);
     for (const chip of visibleChips()) {
-        const count = chip.key === 'all'
-            ? state.cmap.length
-            : projectChip(chip.key).length;
         const div = el('div', {
-            class: 'chip' + (chip.key === state.activeChip ? ' active' : ''),
-            onclick: () => { state.activeChip = chip.key; renderAll(); },
+            class: 'chip' + (chip.key === activeChip() ? ' active' : ''),
+            onclick: () => { setActiveChip(chip.key); renderAll(); },
         },
             el('span', { text: chip.label }),
-            el('span', { class: 'count', text: String(count) }),
+            el('span', { class: 'count', text: String(chipCount(chip.key)) }),
         );
         nav.appendChild(div);
     }
@@ -526,14 +655,18 @@ function renderChips() {
 function renderDetail() {
     const wrap = document.getElementById('detail');
     clearChildren(wrap);
-    const chip = state.catalogue.chips.find(c => c.key === state.activeChip);
+    if (state.mode === 'tokens') {
+        renderTokensDetail(wrap);
+        return;
+    }
+    const chip = activeCatalogue().chips.find(c => c.key === activeChip());
     if (!chip) return;
     if (chip.key === 'all') {
         renderAllChip(wrap);
         return;
     }
     const supportsPatterns = PATTERN_CHIPS.includes(chip.key)
-        || (state.catalogue.patterns[chip.key] || []).length > 0;
+        || (activeCatalogue().patterns[chip.key] || []).length > 0;
     const projected = projectChip(chip.key);
 
     const head = el('h2', null, chip.label, ' ',
@@ -550,6 +683,168 @@ function renderDetail() {
         wrap.appendChild(excludesSection(chip.key));
     }
     wrap.appendChild(previewSection(projected, chip.key));
+}
+
+// ---- Tokens mode --------------------------------------------------------
+
+function tokenChipCount(chipKey) {
+    if (chipKey === 'all') {
+        return state.tokens.tokens.length + state.tokens.conditionals.length;
+    }
+    let n = 0;
+    for (const t of state.tokens.tokens) if (t.chip === chipKey) n++;
+    for (const c of state.tokens.conditionals) if (c.chip === chipKey) n++;
+    return n;
+}
+
+function isConditionalChip(chipKey) {
+    return chipKey === 'ifelse' || chipKey === 'ifelse_examples';
+}
+
+function tokenEntriesForChip(chipKey) {
+    const out = [];
+    if (chipKey === 'all') {
+        for (const t of state.tokens.tokens) out.push({ list: 'tokens', item: t });
+        for (const c of state.tokens.conditionals) out.push({ list: 'conditionals', item: c });
+        return out;
+    }
+    if (isConditionalChip(chipKey)) {
+        state.tokens.conditionals.forEach((c) => {
+            if (c.chip === chipKey) out.push({ list: 'conditionals', item: c });
+        });
+    } else {
+        state.tokens.tokens.forEach((t) => {
+            if (t.chip === chipKey) out.push({ list: 'tokens', item: t });
+        });
+    }
+    return out;
+}
+
+function renderTokensDetail(wrap) {
+    const chip = state.tokens.chips.find(c => c.key === activeChip());
+    if (!chip) return;
+    const entries = tokenEntriesForChip(chip.key);
+
+    wrap.appendChild(el('h2', null, chip.label, ' ',
+        el('small', { text: '(' + chip.key + ', ' + entries.length + ' entries)' })));
+    wrap.appendChild(el('div', {
+        class: 'subhead',
+        text: chip.key === 'all'
+            ? 'Read-only merged view. Switch to a category chip to edit.'
+            : 'Edit a description or token text in place; changes autosave to a '
+            + 'scratch file. Click "Insert icon" beside a field to embed a Nerd '
+            + 'Font glyph at the cursor. "Save catalogue" writes to disk.',
+    }));
+
+    const list = el('div', { class: 'subsection' });
+    for (const entry of entries) {
+        list.appendChild(makeTokenRow(entry, chip.key === 'all'));
+    }
+    wrap.appendChild(list);
+
+    if (chip.key !== 'all') {
+        const addRow = el('div', { class: 'row', style: 'gap: 8px;' });
+        const valueField = isConditionalChip(chip.key) ? 'expression' : 'token';
+        const valueLabel = isConditionalChip(chip.key) ? 'conditional' : 'token';
+        addRow.appendChild(el('button', {
+            text: '+ Add ' + valueLabel,
+            onclick: () => addTokenEntry(chip.key, valueField),
+        }));
+        wrap.appendChild(addRow);
+    }
+}
+
+function addTokenEntry(chipKey, valueField) {
+    const newItem = { description: 'New ' + valueField, chip: chipKey };
+    newItem[valueField] = valueField === 'expression' ? '[if:...]...[/if]' : '%';
+    if (chipKey === 'snippets') newItem.is_snippet = true;
+    if (valueField === 'expression') {
+        state.tokens.conditionals.push(newItem);
+    } else {
+        state.tokens.tokens.push(newItem);
+    }
+    setDirty();
+    renderAll();
+}
+
+function makeTokenRow(entry, readOnly) {
+    const item = entry.item;
+    const valueField = entry.list === 'conditionals' ? 'expression' : 'token';
+    const row = el('div', { class: 'token-row' });
+
+    const descCol = el('div', { class: 'col desc' });
+    descCol.appendChild(el('label', { text: 'Description' }));
+    const descInput = el('input', {
+        class: 'desc', type: 'text', value: item.description || '',
+    });
+    if (readOnly) descInput.disabled = true;
+    descInput.addEventListener('change', () => {
+        item.description = descInput.value;
+        setDirty();
+        // No re-render — the textarea/input keeps focus and other rows stay.
+    });
+    descCol.appendChild(descInput);
+    row.appendChild(descCol);
+
+    const codeCol = el('div', { class: 'col code' });
+    codeCol.appendChild(el('label', {
+        text: valueField === 'expression' ? 'Expression' : 'Token',
+    }));
+    const codeInput = el('textarea', { class: 'code' });
+    codeInput.value = item[valueField] || '';
+    if (readOnly) codeInput.disabled = true;
+    codeInput.addEventListener('change', () => {
+        item[valueField] = codeInput.value;
+        setDirty();
+    });
+    codeCol.appendChild(codeInput);
+    row.appendChild(codeCol);
+
+    if (!readOnly) {
+        const actions = el('div', { class: 'actions' });
+        actions.appendChild(el('button', {
+            text: 'Insert icon',
+            title: 'Open the cmap picker; clicking a glyph inserts it at the cursor in the Token field.',
+            onclick: () => openInsertGlyphPicker(codeInput, item, valueField),
+        }));
+        actions.appendChild(el('button', {
+            text: '✕ Delete',
+            title: 'Remove this entry',
+            onclick: () => {
+                const list = state.tokens[entry.list];
+                const idx = list.indexOf(item);
+                if (idx >= 0) {
+                    list.splice(idx, 1);
+                    setDirty();
+                    renderAll();
+                }
+            },
+        }));
+        row.appendChild(actions);
+    }
+    return row;
+}
+
+function openInsertGlyphPicker(textarea, item, valueField) {
+    state.pickerMode = 'insert-glyph';
+    state.pickerSearch = '';
+    state.pickerInsertCallback = (glyph) => {
+        const start = textarea.selectionStart || 0;
+        const end = textarea.selectionEnd || 0;
+        const before = textarea.value.slice(0, start);
+        const after = textarea.value.slice(end);
+        textarea.value = before + glyph + after;
+        // Trigger change so item gets updated + dirty flag flips.
+        textarea.dispatchEvent(new Event('change'));
+        // Restore caret just past the inserted glyph.
+        const newPos = start + glyph.length;
+        textarea.focus();
+        textarea.setSelectionRange(newPos, newPos);
+    };
+    document.getElementById('picker-modal').classList.add('show');
+    document.getElementById('picker-search').value = '';
+    document.getElementById('picker-search').focus();
+    renderPicker();
 }
 
 function renderAllChip(wrap) {
@@ -591,7 +886,7 @@ function renderAllGrid(q) {
 }
 
 function curatedSection(key) {
-    const items = state.catalogue.curated[key] || [];
+    const items = activeCatalogue().curated[key] || [];
     const grid = el('div', { class: 'icon-grid' });
     items.forEach((item, i) => {
         grid.appendChild(makeCell(item, true, () => {
@@ -613,11 +908,11 @@ function curatedSection(key) {
 }
 
 function patternsSection(key) {
-    const patterns = state.catalogue.patterns[key] || [];
+    const patterns = activeCatalogue().patterns[key] || [];
     const ta = el('textarea', { id: 'patterns-text', value: patterns.join('\n') });
     ta.addEventListener('change', () => {
         const lines = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
-        state.catalogue.patterns[key] = lines;
+        activeCatalogue().patterns[key] = lines;
         setDirty();
         renderAll();
     });
@@ -633,12 +928,12 @@ function patternsSection(key) {
 }
 
 function excludesSection(key) {
-    const excludes = state.catalogue.excludes[key] || {};
+    const excludes = activeCatalogue().excludes[key] || {};
     const lines = Object.keys(excludes).sort();
     const ta = el('textarea', { id: 'excludes-text', value: lines.join('\n') });
     ta.addEventListener('change', () => {
         const newLines = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
-        state.catalogue.excludes[key] = Object.fromEntries(
+        activeCatalogue().excludes[key] = Object.fromEntries(
             newLines.map(n => [n, true]));
         setDirty();
         renderAll();
@@ -655,7 +950,7 @@ function excludesSection(key) {
 }
 
 function previewSection(projected, key) {
-    const exMap = state.catalogue.excludes[key] || {};
+    const exMap = activeCatalogue().excludes[key] || {};
     const grid = el('div', { class: 'icon-grid' });
     for (const cell of projected) {
         const enriched = Object.assign({}, cell, { _excluded: !!exMap[cell.canonical] });
@@ -695,11 +990,17 @@ function makeCell(item, removable, onRemove) {
     return cell;
 }
 
-// ---- Add-icon picker modal ---------------------------------------------
+// ---- Cmap picker modal -------------------------------------------------
+// Two pickerMode flavours:
+//   'add-icon'      - icons mode: clicking a glyph toggles its membership
+//                     in the target chip's curated picks.
+//   'insert-glyph'  - tokens mode: clicking a glyph inserts its UTF-8 bytes
+//                     at the cursor in a token-edit textarea.
 
 function openPicker(targetChipKey) {
     const modal = document.getElementById('picker-modal');
     modal.classList.add('show');
+    state.pickerMode = 'add-icon';
     state.pickerTarget = targetChipKey;
     state.pickerSearch = '';
     document.getElementById('picker-search').value = '';
@@ -709,16 +1010,19 @@ function openPicker(targetChipKey) {
 
 function closePicker() {
     document.getElementById('picker-modal').classList.remove('show');
+    state.pickerInsertCallback = null;
 }
 
 function renderPicker() {
     const body = document.getElementById('picker-body');
     clearChildren(body);
     const q = state.pickerSearch.trim().toLowerCase();
+    const isInsert = state.pickerMode === 'insert-glyph';
     const targetKey = state.pickerTarget;
-    const inCurated = new Set(
-        (state.catalogue.curated[targetKey] || [])
-            .filter(i => i.code != null).map(i => i.code));
+    const inCurated = !isInsert
+        ? new Set((state.icons.curated[targetKey] || [])
+                    .filter(i => i.code != null).map(i => i.code))
+        : new Set();
     const grid = el('div', { class: 'icon-grid' });
     let shown = 0;
     for (const e of state.cmap) {
@@ -727,14 +1031,20 @@ function renderPicker() {
         const cell = makeCell({ code: e.code, label: e.name, _curated: inCur }, false);
         cell.style.cursor = 'pointer';
         cell.addEventListener('click', () => {
-            const cur = state.catalogue.curated[targetKey] || [];
+            if (isInsert) {
+                if (state.pickerInsertCallback) {
+                    state.pickerInsertCallback(utf8FromCodepoint(e.code));
+                }
+                return;  // leave modal open so user can keep inserting
+            }
+            const cur = state.icons.curated[targetKey] || [];
             if (inCur) {
                 const idx = cur.findIndex(x => x.code === e.code);
                 if (idx >= 0) cur.splice(idx, 1);
             } else {
                 cur.push({ code: e.code });
             }
-            state.catalogue.curated[targetKey] = cur;
+            state.icons.curated[targetKey] = cur;
             setDirty();
             renderPicker();
             renderChips();
@@ -751,10 +1061,11 @@ function renderPicker() {
 async function applyCatalogue() {
     const btn = document.getElementById('apply');
     btn.disabled = true;
-    const r = await fetch('/api/apply', {
+    const endpoint = '/api/apply-' + state.mode;
+    const r = await fetch(endpoint, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(state.catalogue),
+        body: JSON.stringify(activeCatalogue()),
     });
     btn.disabled = false;
     const result = document.getElementById('apply-result');
@@ -779,28 +1090,36 @@ async function resetChanges() {
 // ---- Top-level -----------------------------------------------------------
 
 function renderAll() {
-    if (HIDDEN_CHIPS.has(state.activeChip)) state.activeChip = 'all';
+    if (HIDDEN_CHIPS.has(activeChip())) setActiveChip('all');
     renderChips();
     renderDetail();
+}
+
+function setMode(m) {
+    state.mode = m;
+    document.getElementById('mode-icons').classList.toggle('active', m === 'icons');
+    document.getElementById('mode-tokens').classList.toggle('active', m === 'tokens');
+    document.getElementById('catalogue-path').textContent =
+        m === 'icons' ? 'menu/icons_catalogue.lua' : 'menu/tokens_catalogue.lua';
+    renderAll();
 }
 
 async function init() {
     const r = await fetch('/api/data');
     const d = await r.json();
-    state.catalogue = {
-        chips: d.chips,
-        curated: d.curated,
-        patterns: d.patterns,
-        excludes: d.excludes,
-    };
+    state.icons = d.icons;
+    state.tokens = d.tokens;
     state.cmap = d.cmap;
     state.cmapByCode = Object.fromEntries(d.cmap.map(e => [e.code, e]));
-    setClean('Loaded ' + d.cmap.length + ' icons, ' + d.chips.length + ' chips');
-    renderAll();
+    const tokenCount = state.tokens.tokens.length + state.tokens.conditionals.length;
+    setClean('Loaded ' + d.cmap.length + ' icons, ' + tokenCount + ' tokens');
+    setMode('icons');
 }
 
 document.getElementById('apply').addEventListener('click', applyCatalogue);
 document.getElementById('reset').addEventListener('click', resetChanges);
+document.getElementById('mode-icons').addEventListener('click', () => setMode('icons'));
+document.getElementById('mode-tokens').addEventListener('click', () => setMode('tokens'));
 document.getElementById('picker-search').addEventListener('input', (e) => {
     state.pickerSearch = e.target.value;
     renderPicker();
@@ -845,10 +1164,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         if path == '/api/data':
             try:
-                data = load_catalogue()
+                data = load_data()
                 self._send_json(200, data)
             except Exception as e:
-                self._send(500, 'Failed to load catalogue: ' + str(e), 'text/plain')
+                self._send(500, 'Failed to load catalogues: ' + str(e), 'text/plain')
             return
         if path == '/api/font':
             if not SYMBOLS_TTF.exists():
@@ -874,17 +1193,31 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(500, str(e), 'text/plain')
             return
-        if path == '/api/apply':
+        if path == '/api/apply-icons':
             try:
                 catalogue = json.loads(body)
-                cmap = load_catalogue()['cmap']
-                source = render_lua(catalogue, cmap)
-                CATALOGUE_PATH.write_text(source)
+                cmap = load_data()['cmap']
+                source = render_icons_lua(catalogue, cmap)
+                ICONS_CATALOGUE_PATH.write_text(source)
                 # Roundtrip: re-parse via lua to confirm syntactic validity.
-                load_catalogue()
+                load_data()
                 self._send_json(200, {
                     'ok': True,
-                    'path': str(CATALOGUE_PATH.relative_to(REPO_ROOT)),
+                    'path': str(ICONS_CATALOGUE_PATH.relative_to(REPO_ROOT)),
+                    'bytes': len(source.encode('utf-8')),
+                })
+            except Exception as e:
+                self._send(500, 'Apply failed: ' + str(e), 'text/plain')
+            return
+        if path == '/api/apply-tokens':
+            try:
+                catalogue = json.loads(body)
+                source = render_tokens_lua(catalogue)
+                TOKENS_CATALOGUE_PATH.write_text(source)
+                load_data()  # validate
+                self._send_json(200, {
+                    'ok': True,
+                    'path': str(TOKENS_CATALOGUE_PATH.relative_to(REPO_ROOT)),
                     'bytes': len(source.encode('utf-8')),
                 })
             except Exception as e:
@@ -914,15 +1247,17 @@ def main():
     ap.add_argument('--no-browser', action='store_true')
     args = ap.parse_args()
 
-    if not CATALOGUE_PATH.exists():
-        sys.exit('Catalogue not found: ' + str(CATALOGUE_PATH))
+    if not ICONS_CATALOGUE_PATH.exists():
+        sys.exit('Icons catalogue not found: ' + str(ICONS_CATALOGUE_PATH))
+    if not TOKENS_CATALOGUE_PATH.exists():
+        sys.exit('Tokens catalogue not found: ' + str(TOKENS_CATALOGUE_PATH))
     if not SYMBOLS_TTF.exists():
         sys.stderr.write('WARNING: ' + str(SYMBOLS_TTF) + ' not found; '
                          'icons will render as fallback boxes\n')
     try:
-        load_catalogue()
+        load_data()
     except subprocess.CalledProcessError as e:
-        sys.exit('Could not parse catalogue via lua:\n' + (e.stderr or ''))
+        sys.exit('Could not parse catalogues via lua:\n' + (e.stderr or ''))
     except FileNotFoundError:
         sys.exit('lua interpreter not found in PATH')
 
@@ -931,7 +1266,8 @@ def main():
     httpd = socketserver.ThreadingTCPServer(('127.0.0.1', port), Handler)
     httpd.daemon_threads = True
     print('Curator running at', url)
-    print('Catalogue file:', CATALOGUE_PATH)
+    print('Icons catalogue:', ICONS_CATALOGUE_PATH)
+    print('Tokens catalogue:', TOKENS_CATALOGUE_PATH)
     print('Press Ctrl+C to stop.')
 
     if not args.no_browser:

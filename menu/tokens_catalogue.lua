@@ -1,0 +1,165 @@
+--- Tokens library catalogue: chip definitions, regular tokens, and
+--- conditional templates. Data-only — projection (chip filtering, search)
+--- and rendering live in menu/tokens_library.lua.
+---
+--- Edit by hand or via the curator web app at tools/curate_catalogues.py.
+--- The curator overwrites this whole file on save, so any structural
+--- changes (new tables, helpers) belong in menu/tokens_library.lua.
+---
+--- Entry shapes:
+---   TOKENS:       { description, token, chip, [is_snippet] }
+---   CONDITIONALS: { description, expression, chip }
+--- The chip field tags which chip-strip filter shows the entry. "all"
+--- merges TOKENS + CONDITIONALS for the All view.
+
+local _ = require("bookends_i18n").gettext
+
+local M = {}
+
+-- Chip strip. "all" merges TOKENS + CONDITIONALS; per-category chips show
+-- their tagged tokens; "ifelse" / "ifelse_examples" show conditionals.
+M.CHIPS = {
+    { key = "all",              label = _("All") },
+    { key = "book",             label = _("Book") },
+    { key = "progress",         label = _("Progress") },
+    { key = "time",             label = _("Time") },
+    { key = "session",          label = _("Session") },
+    { key = "device",           label = _("Device") },
+    { key = "snippets",         label = _("Snippets") },
+    { key = "ifelse",           label = _("If/else") },
+    { key = "ifelse_examples",  label = _("Examples") },
+}
+
+M.TOKENS = {
+    -- Metadata → Book
+    { description = _("Document title"),                          token = "%title",       chip = "book" },
+    { description = _("First author"),                            token = "%author",      chip = "book" },
+    { description = _("All authors"),                             token = "%authors",     chip = "book" },
+    { description = _("Second author (empty if none)"),           token = "%author_2",    chip = "book" },
+    { description = _("Series with index (combined)"),            token = "%series",      chip = "book" },
+    { description = _("Series name only"),                        token = "%series_name", chip = "book" },
+    { description = _("Series number only"),                      token = "%series_num",  chip = "book" },
+    { description = _("Chapter title (deepest)"),                 token = "%chap_title",  chip = "book" },
+    { description = _("Chapter title at depth 1"),                token = "%chap_title_1", chip = "book" },
+    { description = _("Chapter title at depth 2"),                token = "%chap_title_2", chip = "book" },
+    { description = _("Chapter title at depth 3"),                token = "%chap_title_3", chip = "book" },
+    { description = _("Current chapter number"),                  token = "%chap_num",    chip = "book" },
+    { description = _("Chapter count"),                           token = "%chap_count",  chip = "book" },
+    { description = _("File name"),                               token = "%filename",    chip = "book" },
+    { description = _("Book language"),                           token = "%lang",        chip = "book" },
+    { description = _("Document format (EPUB, PDF, etc.)"),       token = "%format",      chip = "book" },
+    { description = _("Highlights count"),                        token = "%highlights",  chip = "book" },
+    { description = _("Notes count"),                             token = "%notes",       chip = "book" },
+    { description = _("Bookmarks count"),                         token = "%bookmarks",   chip = "book" },
+    { description = _("Annotations count (bookmarks + highlights + notes)"), token = "%annotations", chip = "book" },
+    -- Page / progress → Progress
+    { description = _("Current page number"),                     token = "%page_num",    chip = "progress" },
+    { description = _("Total pages"),                             token = "%page_count",  chip = "progress" },
+    { description = _("Book percentage read"),                    token = "%book_pct",    chip = "progress" },
+    { description = _("Book percentage left"),                    token = "%book_pct_left", chip = "progress" },
+    { description = _("Chapter percentage read"),                 token = "%chap_pct",    chip = "progress" },
+    { description = _("Chapter percentage left"),                 token = "%chap_pct_left", chip = "progress" },
+    { description = _("Pages read in chapter"),                   token = "%chap_read",   chip = "progress" },
+    { description = _("Total pages in chapter"),                  token = "%chap_pages",  chip = "progress" },
+    { description = _("Pages left in chapter"),                   token = "%chap_pages_left", chip = "progress" },
+    { description = _("Pages left in book"),                      token = "%pages_left",  chip = "progress" },
+    -- Progress bars (folded into the Progress chip)
+    { description = _("Progress bar (configure type in line editor)"), token = "%bar",          chip = "progress" },
+    { description = _("Fixed-width progress bar (100px)"),        token = "%bar{100}",         chip = "progress" },
+    { description = _("Progress bar, 10px tall"),                 token = "%bar{v10}",         chip = "progress" },
+    { description = _("Progress bar, 200px wide and 4px tall"),   token = "%bar{200v4}",       chip = "progress" },
+    -- Time / date → Time
+    { description = _("Current time (24h, same as %time_24h)"),   token = "%time",         chip = "time" },
+    { description = _("12-hour clock"),                           token = "%time_12h",     chip = "time" },
+    { description = _("24-hour clock"),                           token = "%time_24h",     chip = "time" },
+    { description = _("Date short (28 Mar)"),                     token = "%date",         chip = "time" },
+    { description = _("Date long (28 March 2026)"),               token = "%date_long",    chip = "time" },
+    { description = _("Date numeric (28/03/2026)"),               token = "%date_numeric", chip = "time" },
+    { description = _("Weekday (Friday)"),                        token = "%weekday",      chip = "time" },
+    { description = _("Weekday short (Fri)"),                     token = "%weekday_short",chip = "time" },
+    { description = _("Custom date/time format (strftime spec)"), token = "%datetime{%d %B}", chip = "time" },
+    { description = _("Time left in chapter"),                    token = "%chap_time_left",  chip = "time" },
+    { description = _("Time left in book"),                       token = "%book_time_left",  chip = "time" },
+    -- Session / reading → Session
+    { description = _("Session reading time"),                    token = "%session_time",     chip = "session" },
+    { description = _("Session pages read"),                      token = "%session_pages",    chip = "session" },
+    { description = _("Pages read today (all books)"),            token = "%pages_today",      chip = "session" },
+    { description = _("Reading time today (all books)"),          token = "%time_today",       chip = "session" },
+    { description = _("Reading speed (pages/hour)"),              token = "%speed",            chip = "session" },
+    { description = _("Average time per page"),                   token = "%avg_page_time",    chip = "session" },
+    { description = _("Total reading time for book"),             token = "%book_read_time",   chip = "session" },
+    { description = _("Pages read of this book (lifetime)"),      token = "%book_pages_read",  chip = "session" },
+    { description = _("Book read percentage (skip-aware)"),       token = "%book_pct_read",    chip = "session" },
+    { description = _("Days reading this book"),                  token = "%days_reading_book",chip = "session" },
+    { description = _("Pages per day for this book"),             token = "%pages_per_day",    chip = "session" },
+    -- Device. Icon-only tokens (%batt_icon, %wifi, %light_icon, %warmth_icon,
+    -- %nightmode, %invert) live in the icons library Dynamic chip, not here.
+    { description = _("Battery level"),                           token = "%batt",         chip = "device" },
+    { description = _("Plugin content"),                          token = "%plugin_content", chip = "device" },
+    { description = _("Frontlight brightness"),                   token = "%light",        chip = "device" },
+    { description = _("Frontlight brightness %"),                 token = "%light_pct",    chip = "device" },
+    { description = _("Frontlight warmth"),                       token = "%warmth",       chip = "device" },
+    { description = _("Frontlight warmth %"),                     token = "%warmth_pct",   chip = "device" },
+    { description = _("RAM used %"),                              token = "%mem",          chip = "device" },
+    { description = _("RAM used (MiB)"),                          token = "%ram",          chip = "device" },
+    { description = _("Free disk space"),                         token = "%disk",         chip = "device" },
+    -- Snippets (full templates rather than single tokens)
+    { description = _("Page X of Y, em-dash framed"), token = "\xE2\x80\x94 Page %page_num of %page_count \xE2\x80\x94", chip = "snippets", is_snippet = true },
+    { description = _("Title \xE2\x8B\xAE author italic"),                       token = "%title \xE2\x8B\xAE [i]%author[/i]", chip = "snippets", is_snippet = true },
+    { description = _("Bookmarks count + label"),                                token = "%bookmarks Bookmark(s)",            chip = "snippets", is_snippet = true },
+    { description = _("Highlights count + label"),                               token = "%highlights Highlight(s)",          chip = "snippets", is_snippet = true },
+    { description = _("Hourglass session timer + pages"),                        token = "\xE2\x8C\x9B %session_time \xC2\xBB %session_pages page session", chip = "snippets", is_snippet = true },
+}
+
+M.CONDITIONALS = {
+    -- References (with `...` placeholders)
+    { description = _("If Wi-Fi is on"),                              expression = "[if:wifi=on]...[/if]",                chip = "ifelse" },
+    { description = _("If connected"),                                expression = "[if:connected=yes]...[/if]",          chip = "ifelse" },
+    { description = _("Battery 0\xE2\x80\x93100"),                    expression = "[if:batt<50]...[/if]",                chip = "ifelse" },
+    { description = _("If charging"),                                 expression = "[if:charging=yes]...[/if]",           chip = "ifelse" },
+    { description = _("If page-turn flipped"),                        expression = "[if:invert=yes]...[/if]",             chip = "ifelse" },
+    { description = _("Book progress 0\xE2\x80\x93100"),              expression = "[if:book_pct>50]...[/if]",            chip = "ifelse" },
+    { description = _("Chapter progress 0\xE2\x80\x93100"),           expression = "[if:chap_pct>50]...[/if]",            chip = "ifelse" },
+    { description = _("Current chapter number"),                      expression = "[if:chap_num=1]...[/if]",             chip = "ifelse" },
+    { description = _("Total chapters"),                              expression = "[if:chap_count>20]...[/if]",          chip = "ifelse" },
+    { description = _("Pages per hour"),                              expression = "[if:speed>0]...[/if]",                chip = "ifelse" },
+    { description = _("Minutes this session"),                        expression = "[if:session>30]...[/if]",             chip = "ifelse" },
+    { description = _("Pages this session"),                          expression = "[if:session_pages>0]...[/if]",        chip = "ifelse" },
+    { description = _("Pages read today"),                            expression = "[if:pages_today>0]...[/if]",          chip = "ifelse" },
+    { description = _("Book read % (skip-aware)"),                    expression = "[if:book_pct_read>50]...[/if]",       chip = "ifelse" },
+    { description = _("odd / even"),                                  expression = "[if:page=odd]...[/if]",               chip = "ifelse" },
+    { description = _("If frontlight on"),                            expression = "[if:light=on]...[/if]",               chip = "ifelse" },
+    { description = _("Frontlight brightness %"),                     expression = "[if:light_pct>50]...[/if]",           chip = "ifelse" },
+    { description = _("Frontlight warmth %"),                         expression = "[if:warmth_pct>50]...[/if]",          chip = "ifelse" },
+    { description = _("If night mode on"),                            expression = "[if:night=on]...[/if]",               chip = "ifelse" },
+    { description = _("EPUB / PDF / CBZ / \xE2\x80\xA6"),             expression = "[if:format=EPUB]...[/if]",            chip = "ifelse" },
+    { description = _("Current HH:MM (24h)"),                         expression = "[if:time>18:00]...[/if]",             chip = "ifelse" },
+    { description = _("Mon\xE2\x80\x93Sun"),                          expression = "[if:day=Mon]...[/if]",                chip = "ifelse" },
+    { description = _("If book has title"),                           expression = "[if:title]...[/if]",                  chip = "ifelse" },
+    { description = _("If book has author"),                          expression = "[if:author]...[/if]",                 chip = "ifelse" },
+    { description = _("If book in series"),                           expression = "[if:series]...[/if]",                 chip = "ifelse" },
+    { description = _("If chapter has title"),                        expression = "[if:chap_title]...[/if]",             chip = "ifelse" },
+    { description = _("Chapter title at depth 1/2/3"),                expression = "[if:chap_title_2]...[/if]",           chip = "ifelse" },
+    { description = _("If book has 2+ authors"),                      expression = "[if:authors>1]...[/if]",              chip = "ifelse" },
+    -- Examples (full templates with else branches and content)
+    { description = _("Author with et al. for multi-author"),         expression = "[if:authors>1]%author, et al.[else]%author[/if]", chip = "ifelse_examples" },
+    { description = _("Wi-Fi icon only when Wi-Fi enabled"),          expression = "[if:wifi=on]%wifi[/if]",              chip = "ifelse_examples" },
+    { description = _("Low-battery warning"),                         expression = "[if:batt<20]LOW %batt[/if]",          chip = "ifelse_examples" },
+    { description = _("Bolt when charging"),                          expression = "[if:charging=yes]\xE2\x9A\xA1[/if] %batt", chip = "ifelse_examples" },
+    { description = _("Arrow when page-turn flipped"),                expression = "[if:invert=yes]\xE2\x87\x84[/if]",    chip = "ifelse_examples" },
+    { description = _("Speed once calculated"),                       expression = "[if:speed>0]%speed pg/hr[/if]",       chip = "ifelse_examples" },
+    { description = _("Session time after start"),                    expression = "[if:session>0]%session_time[/if]",    chip = "ifelse_examples" },
+    { description = _("Odd/even variations"),                         expression = "[if:page=odd]%page_num[else]%page_num[/if]", chip = "ifelse_examples" },
+    { description = _("Near end of book"),                            expression = "[if:book_pct>90]Almost done![/if]",   chip = "ifelse_examples" },
+    { description = _("Frontlight on/off label"),                     expression = "[if:light=off]Light off[else]Light on[/if]", chip = "ifelse_examples" },
+    { description = _("Only for PDFs"),                               expression = "[if:format=PDF]%page_num / %page_count[/if]", chip = "ifelse_examples" },
+    { description = _("Late-night reading"),                          expression = "[if:time>22:00]Late night reading![/if]", chip = "ifelse_examples" },
+    { description = _("Weekends"),                                    expression = "[if:day=Sat or day=Sun]Weekend![/if]", chip = "ifelse_examples" },
+    { description = _("Time window"),                                 expression = "[if:time>=18:00 and time<18:30]6\xE2\x80\x936:30[/if]", chip = "ifelse_examples" },
+    { description = _("Non-series books"),                            expression = "[if:not series]Standalone[/if]",     chip = "ifelse_examples" },
+    { description = _("Fall back to shallower chapter"),              expression = "[if:chap_title_2]%chap_title_2[else]%chap_title_1[/if]", chip = "ifelse_examples" },
+    { description = _("Long books (20+ chapters)"),                   expression = "[if:chap_count>20]Long read[/if]",   chip = "ifelse_examples" },
+    { description = _("Chapter title only when different from book title"), expression = "%title[if:chap_title_1!=@title] \xE2\x80\xA2 %chap_title_1[/if]", chip = "ifelse_examples" },
+}
+
+return M
