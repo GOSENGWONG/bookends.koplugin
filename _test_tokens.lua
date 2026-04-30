@@ -1102,5 +1102,230 @@ test("[if:books_finished>=5] evaluates against state", function()
     eq(Tokens._processConditionals("[if:books_finished>=5]many[/if]", s), "many")
 end)
 
+-- ============================================================================
+-- Chapter-number prefix stripping
+-- ============================================================================
+
+test("parseChapNumPrefix: '1 Title' -> 1, 'Title'", function()
+    local n, rest = Tokens._parseChapNumPrefix("1 Title")
+    eq(n, 1); eq(rest, "Title")
+end)
+
+test("parseChapNumPrefix: '1. Title' -> 1, 'Title'", function()
+    local n, rest = Tokens._parseChapNumPrefix("1. Title")
+    eq(n, 1); eq(rest, "Title")
+end)
+
+test("parseChapNumPrefix: '12: Long Title' -> 12, 'Long Title'", function()
+    local n, rest = Tokens._parseChapNumPrefix("12: Long Title")
+    eq(n, 12); eq(rest, "Long Title")
+end)
+
+test("parseChapNumPrefix: '3) Subsection' -> 3, 'Subsection'", function()
+    local n, rest = Tokens._parseChapNumPrefix("3) Subsection")
+    eq(n, 3); eq(rest, "Subsection")
+end)
+
+test("parseChapNumPrefix: bare '1' -> nil (no separator/rest)", function()
+    eq(Tokens._parseChapNumPrefix("1"), nil)
+end)
+
+test("parseChapNumPrefix: '1.1 Background' -> nil (decimal section number)", function()
+    eq(Tokens._parseChapNumPrefix("1.1 Background"), nil)
+end)
+
+test("parseChapNumPrefix: '1Title' -> nil (no whitespace separator)", function()
+    eq(Tokens._parseChapNumPrefix("1Title"), nil)
+end)
+
+test("parseChapNumPrefix: 'Foreword' -> nil (no leading number)", function()
+    eq(Tokens._parseChapNumPrefix("Foreword"), nil)
+end)
+
+test("parseChapNumPrefix: leading whitespace tolerated", function()
+    local n, rest = Tokens._parseChapNumPrefix("  4 Title")
+    eq(n, 4); eq(rest, "Title")
+end)
+
+test("computeStripPrefixByDepth: clean 1..N at depth 1 -> safe", function()
+    local toc = {
+        { title = "1 Continental Setting", depth = 1, page = 1 },
+        { title = "2 The Wars",            depth = 1, page = 50 },
+        { title = "3 The Aftermath",       depth = 1, page = 100 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], true)
+end)
+
+test("computeStripPrefixByDepth: year-titled history -> NOT safe", function()
+    local toc = {
+        { title = "1939 Invasion of Poland", depth = 1, page = 1 },
+        { title = "1940 Battle of Britain",  depth = 1, page = 50 },
+        { title = "1941 Pearl Harbor",       depth = 1, page = 100 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "year-anchored sequence does not start at 1")
+end)
+
+test("computeStripPrefixByDepth: listicle '10 Rules' singleton -> NOT safe", function()
+    local toc = {
+        { title = "10 Rules for Sleep", depth = 1, page = 1 },
+        { title = "Bedtime",            depth = 1, page = 30 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "single parseable entry is not a sequence")
+end)
+
+test("computeStripPrefixByDepth: gap in sequence -> NOT safe", function()
+    local toc = {
+        { title = "1 Ch1", depth = 1, page = 1 },
+        { title = "2 Ch2", depth = 1, page = 30 },
+        { title = "4 Ch4", depth = 1, page = 60 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "gap at 3 breaks strict 1..N")
+end)
+
+test("computeStripPrefixByDepth: duplicate breaks sequence -> NOT safe", function()
+    local toc = {
+        { title = "1 Ch1",      depth = 1, page = 1 },
+        { title = "2 Ch2",      depth = 1, page = 30 },
+        { title = "2 Ch2 dupe", depth = 1, page = 60 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false)
+end)
+
+test("computeStripPrefixByDepth: Foreword + numbered + Epilogue -> safe", function()
+    local toc = {
+        { title = "Foreword", depth = 1, page = 1 },
+        { title = "1 Ch1",    depth = 1, page = 10 },
+        { title = "2 Ch2",    depth = 1, page = 40 },
+        { title = "3 Ch3",    depth = 1, page = 70 },
+        { title = "Epilogue", depth = 1, page = 100 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], true,
+       "non-numbered entries are ignored, 1..3 is still strict")
+end)
+
+test("computeStripPrefixByDepth: starts at 0 -> NOT safe", function()
+    local toc = {
+        { title = "0 Prologue", depth = 1, page = 1 },
+        { title = "1 Ch1",      depth = 1, page = 10 },
+        { title = "2 Ch2",      depth = 1, page = 40 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false, "must start at 1")
+end)
+
+test("computeStripPrefixByDepth: independent decisions per depth", function()
+    local toc = {
+        { title = "1 Part One",  depth = 1, page = 1 },
+        { title = "1939 Year",   depth = 2, page = 5 },
+        { title = "1940 Year",   depth = 2, page = 20 },
+        { title = "2 Part Two",  depth = 1, page = 50 },
+        { title = "1941 Year",   depth = 2, page = 55 },
+    }
+    local r = Tokens._computeStripPrefixByDepth(toc)
+    eq(r[1], true,  "depth-1 is 1..2")
+    eq(r[2], false, "depth-2 is year-anchored")
+end)
+
+test("computeStripPrefixByDepth: section-numbered '1.1' at depth 2 -> NOT safe", function()
+    local toc = {
+        { title = "1 Introduction", depth = 1, page = 1 },
+        { title = "1.1 Background", depth = 2, page = 3 },
+        { title = "1.2 Methods",    depth = 2, page = 8 },
+        { title = "2 Results",      depth = 1, page = 20 },
+        { title = "2.1 Findings",   depth = 2, page = 23 },
+    }
+    local r = Tokens._computeStripPrefixByDepth(toc)
+    eq(r[1], true,  "depth-1 is 1..2")
+    eq(r[2] or false, false, "depth-2 doesn't parse — pattern rejects '1.1 Background'")
+end)
+
+test("computeStripPrefixByDepth: empty/missing TOC -> empty result", function()
+    eq(next(Tokens._computeStripPrefixByDepth(nil)), nil)
+    eq(next(Tokens._computeStripPrefixByDepth({})), nil)
+end)
+
+test("computeStripPrefixByDepth: '1. Title' / '2. Title' (period sep) -> safe", function()
+    local toc = {
+        { title = "1. Continental", depth = 1, page = 1 },
+        { title = "2. Wars",        depth = 1, page = 30 },
+        { title = "3. Aftermath",   depth = 1, page = 60 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], true)
+end)
+
+test("computeStripPrefixByDepth: '1 Chapter, 2 Chapter' uniform-rest -> NOT safe", function()
+    local toc = {
+        { title = "1 Chapter", depth = 1, page = 1 },
+        { title = "2 Chapter", depth = 1, page = 30 },
+        { title = "3 Chapter", depth = 1, page = 60 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "stripping would leave duplicate 'Chapter' entries")
+end)
+
+test("computeStripPrefixByDepth: '1 Vignette, 2 Vignette' uniform-rest -> NOT safe", function()
+    local toc = {
+        { title = "1 Vignette", depth = 1, page = 1 },
+        { title = "2 Vignette", depth = 1, page = 30 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false)
+end)
+
+test("computeStripPrefixByDepth: partial collision in stripped rest -> NOT safe", function()
+    local toc = {
+        { title = "1 Introduction", depth = 1, page = 1 },
+        { title = "2 The Wars",     depth = 1, page = 30 },
+        { title = "3 The Wars",     depth = 1, page = 60 },
+        { title = "4 Aftermath",    depth = 1, page = 90 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "any duplicate in the post-strip set blocks stripping the whole depth")
+end)
+
+test("computeStripPrefixByDepth: trailing whitespace in rest is normalised", function()
+    local toc = {
+        { title = "1 Chapter ",  depth = 1, page = 1 },
+        { title = "2 Chapter",   depth = 1, page = 30 },
+    }
+    eq(Tokens._computeStripPrefixByDepth(toc)[1], false,
+       "trailing space shouldn't make 'Chapter ' and 'Chapter' look distinct")
+end)
+
+test("getChapterTitlesByDepth: strips '1 Title' family at depth 1", function()
+    local toc = {
+        { title = "1 Continental Setting", depth = 1, page = 1 },
+        { title = "2 The Wars",            depth = 1, page = 50 },
+        { title = "3 The Aftermath",       depth = 1, page = 100 },
+    }
+    local stub_ui = {
+        toc = {
+            toc = toc,
+            getTocTitleByPage = function(_, _) return "" end,
+        },
+    }
+    local out = Tokens.getChapterTitlesByDepth(stub_ui, 60)
+    eq(out.chapter_title, "The Wars")
+    eq(out.chapter_titles_by_depth[1], "The Wars")
+end)
+
+test("getChapterTitlesByDepth: leaves year-titles untouched", function()
+    local toc = {
+        { title = "1939 Invasion of Poland", depth = 1, page = 1 },
+        { title = "1940 Battle of Britain",  depth = 1, page = 50 },
+        { title = "1941 Pearl Harbor",       depth = 1, page = 100 },
+    }
+    local stub_ui = {
+        toc = {
+            toc = toc,
+            getTocTitleByPage = function(_, _) return "" end,
+        },
+    }
+    local out = Tokens.getChapterTitlesByDepth(stub_ui, 60)
+    eq(out.chapter_title, "1940 Battle of Britain")
+    eq(out.chapter_titles_by_depth[1], "1940 Battle of Britain")
+end)
+
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)
