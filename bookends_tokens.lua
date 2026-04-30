@@ -2371,7 +2371,7 @@ function Tokens.expandPreview(format_str, ui, session_elapsed, session_pages_rea
 end
 
 -- Test-only internal exports. Underscore prefix marks these as private —
--- they are exposed solely so _test_conditionals.lua can exercise the parser
+-- they are exposed solely so tests/_test_conditionals.lua can exercise the parser
 -- without needing a running KOReader. Not stable API; may change without notice.
 Tokens._processConditionals = processConditionals
 Tokens._evaluateCondition   = evaluateCondition

@@ -1,5 +1,5 @@
 -- Dev-box test runner for preset_naming.lua. Pure Lua, no KOReader deps.
--- Usage: cd into the plugin dir, then `lua _test_preset_naming.lua`.
+-- Usage: cd into the plugin dir, then `lua tests/_test_preset_naming.lua`.
 -- Exits non-zero on failure.
 
 local PresetNaming = dofile("preset_naming.lua")

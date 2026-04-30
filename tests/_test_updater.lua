@@ -1,6 +1,6 @@
 -- Dev-box test runner for bookends_updater.lua.
 -- Runs pure-Lua (no KOReader) by stubbing every module the updater requires.
--- Usage: cd into the plugin dir, then `lua _test_updater.lua`.
+-- Usage: cd into the plugin dir, then `lua tests/_test_updater.lua`.
 
 package.loaded["ui/widget/confirmbox"] = setmetatable({}, { __index = function() return function() end end })
 package.loaded["device"] = {

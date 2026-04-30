@@ -1,6 +1,6 @@
 -- Dev-box test runner for bookends_tokens.lua token vocabulary + grammar.
 -- Runs pure-Lua (no KOReader) by stubbing the modules bookends_tokens requires.
--- Usage: cd into the plugin dir, then `lua _test_tokens.lua`.
+-- Usage: cd into the plugin dir, then `lua tests/_test_tokens.lua`.
 -- Exits non-zero on failure; no external dependencies.
 
 package.loaded["device"] = {

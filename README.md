@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="bookends-logo-dark.png">
-    <img alt="Bookends" src="bookends-logo.png" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/bookends-logo-dark.png">
+    <img alt="Bookends" src="assets/bookends-logo.png" width="320">
   </picture>
 </p>
 

@@ -1,7 +1,7 @@
 -- Dev-box test runner for bookends_colour.lua parseColorValue.
 -- Runs pure-Lua (no KOReader) by stubbing ffi/blitbuffer with in-memory
 -- constructors so we can assert on r/g/b/alpha without FFI.
--- Usage: cd into the plugin dir, then `lua _test_colour.lua`.
+-- Usage: cd into the plugin dir, then `lua tests/_test_colour.lua`.
 -- Exits non-zero on failure; no external dependencies.
 
 package.loaded["ffi/blitbuffer"] = {
