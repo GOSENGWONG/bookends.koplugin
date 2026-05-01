@@ -1303,9 +1303,13 @@ end
 --- Returns (bar_colors, text_color, symbol_color) — colour values the
 --- text-rendering phase also needs.
 function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
-    if self.dirty then
-        self._tick_cache = nil
-    end
+    -- Tick cache is invalidated explicitly by the events that actually
+    -- change tick fractions (onPageUpdate / onPosUpdate / footer-visibility
+    -- change, applyPreset, _scheduleRepaint). The previous cascade clear
+    -- here on any dirty paint was redundant for those paths and actively
+    -- harmful on the live-line-editor path, where dirty=true fires per
+    -- keystroke but tick fractions don't change. The flow-id check inside
+    -- _computeBarProgress already handles cross-flow paint cycles.
 
     -- Progress bar colors from settings
     local global_tick_height_pct = self.settings:readSetting("tick_height_pct")
