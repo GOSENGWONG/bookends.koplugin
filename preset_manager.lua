@@ -249,13 +249,25 @@ function PresetManager.attach(Bookends)
         return dir
     end
 
+    --- Invalidate the in-memory preset-files cache. Called by every
+    --- mutator path on this object so the next readPresetFiles() picks up
+    --- the new state. Cache survives only the plugin process lifetime;
+    --- a KOReader restart always rebuilds.
+    function Bookends:invalidatePresetCache()
+        self._preset_files_cache = nil
+    end
+
     function Bookends:readPresetFiles()
+        if self._preset_files_cache then
+            return self._preset_files_cache
+        end
         local lfs = require("libs/libkoreader-lfs")
         local logger = require("logger")
         local dir = self:presetDir()
         local presets = {}
 
         if lfs.attributes(dir, "mode") ~= "directory" then
+            self._preset_files_cache = presets
             return presets
         end
 
@@ -275,6 +287,12 @@ function PresetManager.attach(Bookends)
                             name = name,
                             filename = f,
                             preset = data,
+                            -- Memoise hasColour at parse time so card
+                            -- renderers don't re-walk the preset table on
+                            -- every visible slot, every refresh. Falls in
+                            -- step with the readPresetFiles cache: stays
+                            -- valid until invalidatePresetCache() runs.
+                            has_colour = hasColour(data),
                         })
                     end
                 end
@@ -282,6 +300,7 @@ function PresetManager.attach(Bookends)
         end
 
         table.sort(presets, function(a, b) return a.name < b.name end)
+        self._preset_files_cache = presets
         return presets
     end
 
@@ -300,6 +319,7 @@ function PresetManager.attach(Bookends)
         end
 
         writePresetContents(dir .. "/" .. filename, name, preset_data)
+        self:invalidatePresetCache()
         return filename
     end
 
@@ -307,6 +327,7 @@ function PresetManager.attach(Bookends)
         local path = self:presetDir() .. "/" .. filename
         os.remove(path)
         pruneFromCycle(self, filename)
+        self:invalidatePresetCache()
     end
 
     function Bookends:renamePresetFile(old_filename, new_name)
@@ -323,6 +344,9 @@ function PresetManager.attach(Bookends)
             renameInCycle(self, old_filename, new_filename)
         end
 
+        -- writePresetFile already invalidated; renaming the file on disk
+        -- invalidates the prior entry's filename too, so re-invalidate.
+        self:invalidatePresetCache()
         return new_filename
     end
 
@@ -334,6 +358,7 @@ function PresetManager.attach(Bookends)
         preset_data = preset_data or self:buildPreset()
         preset_data.name = name
         writePresetContents(path, name, preset_data)
+        self:invalidatePresetCache()
     end
 
     function Bookends:migratePresetsToFiles()
@@ -406,6 +431,7 @@ function PresetManager.attach(Bookends)
             preset_data.author = existing.author
         end
         writePresetContents(path, preset_data.name or filename, preset_data)
+        self:invalidatePresetCache()
     end
 end
 
