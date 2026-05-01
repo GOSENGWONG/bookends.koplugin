@@ -76,6 +76,10 @@ local function getAllNerdFontCells()
             glyph = utf8FromCodepoint(entry.code),
             label = entry.name,
             canonical = entry.name,
+            -- Pre-lowercased haystack for the search path. Avoids re-lowering
+            -- ~2,800 names on every keystroke-submit refresh: see currentItemList
+            -- below which now does query-tokenisation + cell-match using this.
+            search_lc = entry.name:lower(),
             code = entry.code,
             insert_value = utf8FromCodepoint(entry.code),
         }
@@ -173,10 +177,29 @@ local function currentItemList(state)
     if state.search_query and #state.search_query >= 2 then
         -- Search across the full Nerd Font index; cap at 200 to keep
         -- pagination sensible. Reuse the cached cell projections.
+        --
+        -- Hot path: with ~2,800 cells and 16 grid slots per page, the parent
+        -- LibraryModal calls into this list multiple times per refresh. We
+        -- tokenise the query once and match against each cell's pre-lowered
+        -- search_lc — avoids ~2,800 query:lower() + gmatch reparses and
+        -- ~2,800 haystack:lower() calls per refresh that the generic
+        -- LibraryModal._matchesQuery would do.
+        local terms = {}
+        for term in state.search_query:lower():gmatch("%S+") do
+            terms[#terms + 1] = term
+        end
         local cells = getAllNerdFontCells()
         local items = {}
         for _i, cell in ipairs(cells) do
-            if LibraryModal._matchesQuery(cell.canonical, state.search_query) then
+            local lc = cell.search_lc
+            local match = true
+            for _t = 1, #terms do
+                if not lc:find(terms[_t], 1, true) then
+                    match = false
+                    break
+                end
+            end
+            if match then
                 items[#items + 1] = cell
                 if #items >= 200 then break end
             end
