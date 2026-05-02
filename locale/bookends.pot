@@ -1719,6 +1719,10 @@ msgstr ""
 msgid "Read color (% black)"
 msgstr ""
 
+#: menu/colours_menu.lua
+msgid "Read thickness"
+msgstr ""
+
 #: menu/progress_bar_menu.lua
 msgid "Unread"
 msgstr ""
@@ -1729,6 +1733,10 @@ msgstr ""
 
 #: menu/colours_menu.lua:105
 msgid "Unread color (% black)"
+msgstr ""
+
+#: menu/colours_menu.lua
+msgid "Unread thickness"
 msgstr ""
 
 #: menu/colours_menu.lua:114
