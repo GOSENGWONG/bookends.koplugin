@@ -1166,11 +1166,11 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
             pr(line_ox + read_trunk_start, line_y, line_fill, line_thick, metro_fill)
         end
 
-        -- Chapter ticks: depth 1 above line (connected to trunk), depth 2 below
+        -- Chapter ticks: depth 1 above line (connected to trunk), depth 2 below.
         -- When reversed, flip tick sides so the visual hierarchy mirrors the direction.
-        -- Tick height scales per-half to local trunk thickness.
-        local metro_tick_h_read = math.max(1, math.floor(thickness * tick_height_pct / 100))
-        local metro_tick_h_unread = math.max(1, math.floor(unread_thick * tick_height_pct / 100))
+        -- Tick height is uniform across both halves — derived from the read
+        -- thickness so unread-half ticks don't shrink with the trunk.
+        local metro_tick_h = math.max(1, math.floor(thickness * tick_height_pct / 100))
         for _i, tick in ipairs(ticks or {}) do
             local tick_frac = type(tick) == "table" and tick[1] or tick
             local tick_w = type(tick) == "table" and tick[2] or 1
@@ -1197,7 +1197,6 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                 -- Anchor ticks at the bar's vertical centre so they always cross
                 -- the trunk regardless of read/unread thickness asymmetry.
                 local centre_y = oy + math.floor(thickness / 2)
-                local metro_tick_h = is_read and metro_tick_h_read or metro_tick_h_unread
                 if tick_above then
                     pr(line_ox + tick_pos, centre_y - metro_tick_h, line_thick, metro_tick_h, tick_color)
                 else
