@@ -15,6 +15,7 @@ local Geom = require("ui/geometry")
 local GestureRange = require("ui/gesturerange")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan = require("ui/widget/horizontalspan")
+local InfoMessage = require("ui/widget/infomessage")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local InputDialog = require("ui/widget/inputdialog")
 local LeftContainer = require("ui/widget/container/leftcontainer")
@@ -408,14 +409,18 @@ local function renderPresetCard(self, item, slot_dimen)
         end
         PresetManagerModal._addRow(self, vg_tmp, slot_dimen.w, row_height, font_size, baseline, left_pad, opts)
     else
-        -- Gallery tab: highlighted if currently previewed, or if the gallery
-        -- entry's name matches the active local preset (mirrors local-tab
-        -- behaviour so the user can see which gallery preset they're already
-        -- running when they open the tab for the first time).
+        -- Gallery tab highlight is mutually exclusive (matches the local-tab
+        -- pattern at line 386-406): when previewing a gallery item, only
+        -- that card lights up; with no active preview, the gallery entry
+        -- whose name matches the currently-applied local preset highlights
+        -- instead. Without this exclusivity the active-name match and the
+        -- preview-slug match could fire on different cards in the same
+        -- render and the user would see two cards selected with no way to
+        -- tell which is which.
         local is_selected
-        if self.previewing and self.previewing.kind == "gallery"
-           and self.previewing.entry and self.previewing.entry.slug == item.slug then
-            is_selected = true
+        if self.previewing and self.previewing.kind == "gallery" then
+            is_selected = self.previewing.entry ~= nil
+                and self.previewing.entry.slug == item.slug
         else
             -- Resolve once per render cycle; reuse across cards via self cache.
             if self._active_preset_name == nil then
@@ -650,34 +655,51 @@ function PresetManagerModal.show(bookends)
         -- stale-refresh-in-background doesn't visibly strip the current sort.
         -- They get overwritten when the new fetches land.
         self.rebuild()
-        Gallery.fetchIndex("KOReader-Bookends", function(idx, err)
-            if not idx then
-                self.gallery_loading = false
-                self.gallery_error = err
-                self.rebuild()
-                return
-            end
-            self.gallery_index = idx
-            self.gallery_error = nil
-            self.gallery_last_refresh_time = os.time()
-            -- Secondary fetches: approval queue (open PRs) and install counts.
-            -- Both are non-fatal. We only flip gallery_loading off once both
-            -- resolve so the status text doesn't flicker between them.
-            local pending = 2
-            local function maybeDone()
-                pending = pending - 1
-                if pending <= 0 then
+
+        -- Visible feedback while the synchronous httpGets block the main
+        -- thread. Without this the chip-tap would freeze the UI silently
+        -- for 1–5 s: rebuild()'s nextTick can't fire because the next call
+        -- on the stack is the blocking fetch. scheduleIn(0.1, ...) gives
+        -- the message a paint cycle before the freeze. Same shape as
+        -- bookends_updater.lua:304-309.
+        local loading_msg = InfoMessage:new{ text = _("Loading gallery…") }
+        UIManager:show(loading_msg)
+        local function dismissLoading()
+            UIManager:close(loading_msg)
+        end
+
+        UIManager:scheduleIn(0.1, function()
+            Gallery.fetchIndex("KOReader-Bookends", function(idx, err)
+                if not idx then
                     self.gallery_loading = false
+                    self.gallery_error = err
+                    dismissLoading()
                     self.rebuild()
+                    return
                 end
-            end
-            Gallery.fetchApprovalQueueCount("KOReader-Bookends", function(count)
-                if count then self.approval_queue_count = count end
-                maybeDone()
-            end)
-            Gallery.fetchCounts("KOReader-Bookends", function(counts)
-                if counts then self.gallery_counts = counts end
-                maybeDone()
+                self.gallery_index = idx
+                self.gallery_error = nil
+                self.gallery_last_refresh_time = os.time()
+                -- Secondary fetches: approval queue (open PRs) and install counts.
+                -- Both are non-fatal. We only flip gallery_loading off once both
+                -- resolve so the status text doesn't flicker between them.
+                local pending = 2
+                local function maybeDone()
+                    pending = pending - 1
+                    if pending <= 0 then
+                        self.gallery_loading = false
+                        dismissLoading()
+                        self.rebuild()
+                    end
+                end
+                Gallery.fetchApprovalQueueCount("KOReader-Bookends", function(count)
+                    if count then self.approval_queue_count = count end
+                    maybeDone()
+                end)
+                Gallery.fetchCounts("KOReader-Bookends", function(counts)
+                    if counts then self.gallery_counts = counts end
+                    maybeDone()
+                end)
             end)
         end)
     end
