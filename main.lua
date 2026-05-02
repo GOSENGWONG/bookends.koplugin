@@ -1342,8 +1342,15 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                 end
                 -- Plumb asymmetric thickness when set. Geometry lives on
                 -- bar_cfg directly; piggybacks on the colors table to avoid
-                -- changing paintProgressBar's signature.
+                -- changing paintProgressBar's signature. Copy bar_colors
+                -- before mutating so per-bar overrides don't pollute the
+                -- shared global table (which feeds inline bars too).
                 if bar_cfg.unread_height then
+                    if colors == bar_colors and colors ~= nil then
+                        local copy = {}
+                        for k, v in pairs(colors) do copy[k] = v end
+                        colors = copy
+                    end
                     if colors then
                         colors.unread_height = bar_cfg.unread_height
                     else
