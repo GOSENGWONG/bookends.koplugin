@@ -1221,6 +1221,9 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         local amplitude = math.floor(thickness * 0.35)
         local ribbon_h = math.max(3, math.floor(thickness * 0.4))
         local half_ribbon = math.floor(ribbon_h / 2)
+        local unread_ribbon_h = unread_thick == read_thick and ribbon_h
+            or math.max(1, math.floor(ribbon_h * unread_thick / read_thick))
+        local unread_half_ribbon = math.floor(unread_ribbon_h / 2)
         local mid = oy + math.floor(thickness / 2)
         local two_pi = 2 * math.pi
 
@@ -1259,17 +1262,21 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         paintCap(ox, wave_y(0), start_color)
         paintCap(ox + length - 1, wave_y(length - 1), end_color)
 
-        -- Paint ribbon column by column
+        -- Paint ribbon column by column. Read columns use full ribbon_h;
+        -- unread columns use the (possibly thinner) unread_ribbon_h, centred
+        -- on the same wave path. Symmetric configs collapse to the prior render.
         for i = 0, length - 1 do
             local cy = wave_y(i)
-            local ry = cy - half_ribbon
             local in_fill = i >= fill_start and i < fill_end
             local color = in_fill and wave_fill or wave_track
+            local h_local = in_fill and ribbon_h or unread_ribbon_h
+            local half_local = in_fill and half_ribbon or unread_half_ribbon
+            local ry = cy - half_local
             if color then
                 if vertical then
-                    bbPaintRect(bb, ry, ox + i, ribbon_h, 1, color)
+                    bbPaintRect(bb, ry, ox + i, h_local, 1, color)
                 else
-                    bbPaintRect(bb, ox + i, ry, 1, ribbon_h, color)
+                    bbPaintRect(bb, ox + i, ry, 1, h_local, color)
                 end
             end
         end
