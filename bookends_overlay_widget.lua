@@ -1094,6 +1094,15 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
     local ox = vertical and y or x  -- origin along progress axis
     local oy = vertical and x or y  -- origin along cross axis
 
+    -- Asymmetric thickness: read side = full `thickness`, unread side = a
+    -- separate value (centred on the same midline). nil/equal = symmetric,
+    -- and the per-style code paths collapse back to the existing render.
+    local read_thick = thickness
+    local unread_thick = (colors and colors.unread_height) or read_thick
+    if unread_thick < 0 then unread_thick = 0 end
+    if unread_thick > read_thick then unread_thick = read_thick end
+    local unread_oy = oy + math.floor((read_thick - unread_thick) / 2)
+
     if style == "metro" then
         -- Metro style: start ring, trunk line, position dot, ticks above/below
         local line_thick = math.max(3, math.floor(thickness * 0.2))
