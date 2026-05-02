@@ -1109,6 +1109,9 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         local start_r = math.floor(thickness / 2)  -- full height circle
         local dot_r = math.max(4, math.floor(thickness * 0.35))
         local line_y = oy + math.floor((thickness - line_thick) / 2)
+        local unread_line_thick = unread_thick == read_thick and line_thick
+            or math.max(1, math.floor(line_thick * unread_thick / read_thick))
+        local unread_line_y = oy + math.floor((thickness - unread_line_thick) / 2)
         -- Metro ticks default shorter — the thin trunk looks better with
         -- compact ticks.  Scale the user's tick_height_pct relative to 60%
         -- so 100% (default) → 60%, 200% → 120%, etc.
@@ -1126,11 +1129,20 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         local metro_track = resolveColor(custom_track, Blitbuffer.COLOR_DARK_GRAY)
         -- metro_fill: nil when user has not set a distinct fill (or set it to false/transparent)
         local metro_fill = resolveColor(custom_metro_fill, nil)
-        -- Track line full length
-        pr(line_ox, line_y, line_len, line_thick, metro_track)
-        -- Optional fill overlay on the read portion
-        if metro_fill then
-            pr(line_ox + line_fill_start, line_y, line_fill, line_thick, metro_fill)
+        -- Trunk: read portion at full line_thick, unread portion at unread_line_thick.
+        -- Both centred on the bar's cross-axis. When symmetric they coincide.
+        local read_trunk_start = reverse and (line_len - line_fill) or 0
+        local unread_trunk_start = reverse and 0 or line_fill
+        local unread_trunk_len = line_len - line_fill
+        if line_fill > 0 then
+            pr(line_ox + read_trunk_start, line_y, line_fill, line_thick, metro_track)
+        end
+        if unread_trunk_len > 0 and unread_line_thick > 0 then
+            pr(line_ox + unread_trunk_start, unread_line_y, unread_trunk_len, unread_line_thick, metro_track)
+        end
+        -- Optional fill overlay on the read portion (always at read line_thick)
+        if metro_fill and line_fill > 0 then
+            pr(line_ox + read_trunk_start, line_y, line_fill, line_thick, metro_fill)
         end
 
         -- Chapter ticks: depth 1 above line (connected to trunk), depth 2 below
