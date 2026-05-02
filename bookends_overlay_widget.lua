@@ -1167,8 +1167,10 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         end
 
         -- Chapter ticks: depth 1 above line (connected to trunk), depth 2 below
-        -- When reversed, flip tick sides so the visual hierarchy mirrors the direction
-        local metro_tick_h = math.max(1, math.floor(thickness * tick_height_pct / 100))
+        -- When reversed, flip tick sides so the visual hierarchy mirrors the direction.
+        -- Tick height scales per-half to local trunk thickness.
+        local metro_tick_h_read = math.max(1, math.floor(thickness * tick_height_pct / 100))
+        local metro_tick_h_unread = math.max(1, math.floor(unread_thick * tick_height_pct / 100))
         for _i, tick in ipairs(ticks or {}) do
             local tick_frac = type(tick) == "table" and tick[1] or tick
             local tick_w = type(tick) == "table" and tick[2] or 1
@@ -1195,6 +1197,7 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                 -- Anchor ticks at the bar's vertical centre so they always cross
                 -- the trunk regardless of read/unread thickness asymmetry.
                 local centre_y = oy + math.floor(thickness / 2)
+                local metro_tick_h = is_read and metro_tick_h_read or metro_tick_h_unread
                 if tick_above then
                     pr(line_ox + tick_pos, centre_y - metro_tick_h, line_thick, metro_tick_h, tick_color)
                 else
@@ -1314,9 +1317,11 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
             local tick_pos = math.floor(length * tick_frac)
             if tick_pos > 0 and tick_pos < length then
                 local cy = wave_y(tick_pos)
-                local th = math.max(1, math.floor(ribbon_h * tick_height_pct / 100))
-                local ty = cy - math.floor(th / 2)
                 local in_fill = tick_pos >= fill_start and tick_pos < fill_end
+                -- Tick height scales to local ribbon thickness (read or unread).
+                local local_ribbon_h = in_fill and ribbon_h or unread_ribbon_h
+                local th = math.max(1, math.floor(local_ribbon_h * tick_height_pct / 100))
+                local ty = cy - math.floor(th / 2)
                 local base_tick = wave_dot
                 if base_tick then
                     local tick_color
@@ -1508,7 +1513,9 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                     else
                         tick_color = base_tick
                     end
-                    local th = math.max(1, math.floor(thickness * tick_height_pct / 100))
+                    -- Tick height scales to the local thickness (read or unread half).
+                    local local_thick = in_fill and read_thick or unread_thick
+                    local th = math.max(1, math.floor(local_thick * tick_height_pct / 100))
                     local t_oy = oy + math.floor((thickness - th) / 2)
                     pr(ox + tick_pos, t_oy, tick_w, th, tick_color)
                 end
@@ -1619,7 +1626,9 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                         else
                             tick_color = base_tick
                         end
-                        local th = math.max(1, math.floor(tick_thick * tick_height_pct / 100))
+                        -- Tick height scales to local thickness (read or unread).
+                        local local_thick = in_fill and read_thick or unread_thick
+                        local th = math.max(1, math.floor(local_thick * tick_height_pct / 100))
                         local t_oy = oy + math.floor((tick_thick - th) / 2)
                         pr(tick_ox + tick_pos, t_oy, tick_w, th, tick_color)
                     end
