@@ -1340,6 +1340,16 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                 elseif not colors and global_tick_height_pct then
                     colors = { tick_height_pct = global_tick_height_pct }
                 end
+                -- Plumb asymmetric thickness when set. Geometry lives on
+                -- bar_cfg directly; piggybacks on the colors table to avoid
+                -- changing paintProgressBar's signature.
+                if bar_cfg.unread_height then
+                    if colors then
+                        colors.unread_height = bar_cfg.unread_height
+                    else
+                        colors = { unread_height = bar_cfg.unread_height }
+                    end
+                end
                 OverlayWidget.paintProgressBar(bb, bar_x, bar_y, bar_w, bar_h, pct, ticks,
                     bar_cfg.style or "solid", paint_vertical and "vertical" or nil, paint_reverse, colors)
                 table.insert(self._hold_rects, { x = bar_x, y = bar_y, w = bar_w, h = bar_h })
