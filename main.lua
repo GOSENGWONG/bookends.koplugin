@@ -1184,7 +1184,6 @@ end
 --- Returns (pct, ticks).
 function Bookends:_computeBarProgress(bar_cfg, pageno_local)
     local doc = self.ui.document
-    local is_cre = self.ui.rolling ~= nil
     local pct = 0
     local ticks = {}
 
@@ -1239,33 +1238,23 @@ function Bookends:_computeBarProgress(bar_cfg, pageno_local)
             ticks = remapped
         end
     elseif bar_cfg.type == "chapter" then
-        if is_cre and doc.getCurrentPos and self.ui.toc then
-            local cur_pos = doc:getCurrentPos()
+        -- Match the inline-bar formula in bookends_tokens.lua so a chapter bar
+        -- and an inline %chap_pct render the same fraction on the same page.
+        if self.ui.toc then
             local chapter_start = self.ui.toc:getPreviousChapter(pageno_local)
             if self.ui.toc:isChapterStart(pageno_local) then
                 chapter_start = pageno_local
             end
-            local next_chapter = self.ui.toc:getNextChapter(pageno_local)
             if chapter_start then
-                local start_xp = doc:getPageXPointer(chapter_start)
-                local start_pos = start_xp and doc:getPosFromXPointer(start_xp) or 0
-                local end_pos
-                if next_chapter then
-                    local next_xp = doc:getPageXPointer(next_chapter)
-                    end_pos = next_xp and doc:getPosFromXPointer(next_xp) or (doc.info and doc.info.doc_height or 0)
-                else
-                    end_pos = doc.info and doc.info.doc_height or 0
+                local next_chapter = self.ui.toc:getNextChapter(pageno_local)
+                local chapter_end = next_chapter or (doc:getPageCount() + 1)
+                local total = chapter_end - chapter_start
+                if total > 1 then
+                    local done = pageno_local - chapter_start
+                    pct = math.max(0, math.min(1, done / (total - 1)))
+                elseif total > 0 then
+                    pct = 1
                 end
-                local range = end_pos - start_pos
-                if range > 0 then
-                    pct = math.max(0, math.min(1, (cur_pos - start_pos) / range))
-                end
-            end
-        elseif self.ui.toc then
-            local done = self.ui.toc:getChapterPagesDone(pageno_local)
-            local total = self.ui.toc:getChapterPageCount(pageno_local)
-            if done and total and total > 0 then
-                pct = math.max(0, math.min(1, (done + 1) / total))
             end
         end
     end
