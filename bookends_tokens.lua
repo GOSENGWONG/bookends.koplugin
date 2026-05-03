@@ -1622,7 +1622,7 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
     local chapter_title_num = ""   -- leading number parsed from title when strip-safe
     local chapter_title_name = ""  -- title with leading number removed when strip-safe; raw title otherwise
     local chapter_titles_by_depth = {}  -- { [1] = "Part II", [2] = "Chapter 1", ... }
-    if needs("chap_pct", "chap_pct_left", "chap_read", "chap_pages", "chap_pages_left", "chap_title", "chap_num", "chap_count", "chap_title_num", "chap_title_name") and pageno and ui.toc then
+    if needs("chap_pct", "chap_pct_left", "chap_read", "chap_pages", "chap_pages_left", "chap_title", "chap_title_1", "chap_title_2", "chap_title_3", "chap_num", "chap_count", "chap_title_num", "chap_title_name") and pageno and ui.toc then
         -- Raw page calculation for %P (percentage)
         local chapter_start = ui.toc:getPreviousChapter(pageno)
         if ui.toc:isChapterStart(pageno) then
