@@ -1342,6 +1342,16 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                 elseif not colors and global_tick_height_pct then
                     colors = { tick_height_pct = global_tick_height_pct }
                 end
+                -- Per-bar override: inherit global border_thickness when not
+                -- set per-bar. The per-bar menu's "Default Xpx" label promises
+                -- inheritance from global, and storing the menu value collapses
+                -- to nil when val == default_val. Without this, a per-bar
+                -- struct with border_thickness=nil would fall back to the
+                -- painter's hardcoded 1px instead of the global value.
+                if colors and colors ~= bar_colors and not colors.border_thickness
+                        and bar_colors and bar_colors.border_thickness then
+                    colors.border_thickness = bar_colors.border_thickness
+                end
                 -- Plumb asymmetric thickness when set. Geometry lives on
                 -- bar_cfg directly; piggybacks on the colors table to avoid
                 -- changing paintProgressBar's signature. Copy bar_colors
