@@ -28,8 +28,8 @@ end
 
 local SCREEN_H = 800
 
-local function pos(line_count, line_height_px, v_offset, v_margin, disabled)
-    return { line_count = line_count or 0, line_height_px = line_height_px or 24,
+local function pos(height_px, v_offset, v_margin, disabled)
+    return { height_px = height_px or 0,
              v_offset = v_offset or 0, v_margin = v_margin or 0,
              disabled = disabled or false }
 end
@@ -47,7 +47,7 @@ end)
 
 test("top has 1 enabled (tc, 2 lines @ 24px, 0 offset/margin): fill = 0..48", function()
     local r = OverlayWidget.computeEndFillExtents({
-        tl = pos(0), tc = pos(2, 24), tr = pos(0),
+        tl = pos(0), tc = pos(48), tr = pos(0),
         bl = pos(0), bc = pos(0), br = pos(0),
     }, SCREEN_H)
     eq(r.top_any_enabled, true)
@@ -57,34 +57,34 @@ end)
 
 test("top: max across enabled positions wins", function()
     local r = OverlayWidget.computeEndFillExtents({
-        tl = pos(1, 24), tc = pos(3, 24), tr = pos(2, 24),
+        tl = pos(24), tc = pos(72), tr = pos(48),
         bl = pos(0), bc = pos(0), br = pos(0),
     }, SCREEN_H)
-    eq(r.top_y, 72)  -- tc has 3 lines × 24px
+    eq(r.top_y, 72)  -- tc has 72px height
 end)
 
 test("bottom: min y wins (max height from screen bottom)", function()
     local r = OverlayWidget.computeEndFillExtents({
         tl = pos(0), tc = pos(0), tr = pos(0),
-        bl = pos(1, 24), bc = pos(3, 24), br = pos(2, 24),
+        bl = pos(24), bc = pos(72), br = pos(48),
     }, SCREEN_H)
     eq(r.bottom_any_enabled, true)
-    eq(r.bottom_y, SCREEN_H - 72)  -- bc with 3 lines × 24px wins
+    eq(r.bottom_y, SCREEN_H - 72)  -- bc with 72px height wins
 end)
 
 test("disabled position still contributes height (A+C rule)", function()
-    -- tc has 3 disabled lines, tl has 1 enabled. Fill should still be max(tl,tc) = tc's 72.
+    -- tc has 72px disabled height, tl has 24px enabled. Fill should still be max(tl,tc) = tc's 72.
     local r = OverlayWidget.computeEndFillExtents({
-        tl = pos(1, 24, 0, 0, false), tc = pos(3, 24, 0, 0, true), tr = pos(0),
+        tl = pos(24, 0, 0, false), tc = pos(72, 0, 0, true), tr = pos(0),
         bl = pos(0), bc = pos(0), br = pos(0),
     }, SCREEN_H)
     eq(r.top_any_enabled, true)
     eq(r.top_y, 72)  -- tc's disabled-but-configured height counts toward fill
 end)
 
-test("all-disabled end: any_enabled is false even if line_count > 0", function()
+test("all-disabled end: any_enabled is false even if height_px > 0", function()
     local r = OverlayWidget.computeEndFillExtents({
-        tl = pos(2, 24, 0, 0, true), tc = pos(0), tr = pos(1, 24, 0, 0, true),
+        tl = pos(48, 0, 0, true), tc = pos(0), tr = pos(24, 0, 0, true),
         bl = pos(0), bc = pos(0), br = pos(0),
     }, SCREEN_H)
     eq(r.top_any_enabled, false)
@@ -93,10 +93,10 @@ end)
 
 test("v_offset and v_margin shift the fill edge outward", function()
     local r = OverlayWidget.computeEndFillExtents({
-        tl = pos(0), tc = pos(2, 24, 5, 10), tr = pos(0),  -- +15 px offset+margin
+        tl = pos(0), tc = pos(48, 5, 10), tr = pos(0),  -- 48px height + 5 offset + 10 margin
         bl = pos(0), bc = pos(0), br = pos(0),
     }, SCREEN_H)
-    eq(r.top_y, 5 + 10 + 2 * 24)  -- 63
+    eq(r.top_y, 5 + 10 + 48)  -- 63
 end)
 
 io.write(string.format("%d pass / %d fail\n", pass, fail))

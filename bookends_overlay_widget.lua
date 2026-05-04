@@ -1966,16 +1966,20 @@ end
 
 --- Compute per-end fill extents for the Background colour feature.
 --- @param positions_data table: keyed by tl/tc/tr/bl/bc/br. Each entry has:
----   { disabled = bool, line_count = N, line_height_px = H,
----     v_offset = V, v_margin = M }
+---   { disabled = bool, height_px = H, v_offset = V, v_margin = M }
+---   where height_px is the configured pixel height of the position's rendered
+---   block (composite line stack), regardless of whether it's currently painted.
 --- @param screen_h number: pixel screen height
 --- @return table { top_y, bottom_y, top_any_enabled, bottom_any_enabled }
+---   top_any_enabled and bottom_any_enabled are true only when the position is
+---   not disabled AND its configured height_px > 0 (i.e. it would render
+---   *something* if enabled).
 function OverlayWidget.computeEndFillExtents(positions_data, screen_h)
     local function inner_edge_top(p)
-        return p.v_offset + p.v_margin + p.line_count * p.line_height_px
+        return p.v_offset + p.v_margin + p.height_px
     end
     local function inner_edge_bottom(p)
-        return screen_h - p.v_offset - p.v_margin - p.line_count * p.line_height_px
+        return screen_h - p.v_offset - p.v_margin - p.height_px
     end
 
     local top_keys = { "tl", "tc", "tr" }
@@ -1989,7 +1993,7 @@ function OverlayWidget.computeEndFillExtents(positions_data, screen_h)
         if p then
             local edge = inner_edge_top(p)
             if edge > top_y then top_y = edge end
-            if not p.disabled and p.line_count > 0 then top_any_enabled = true end
+            if not p.disabled and p.height_px > 0 then top_any_enabled = true end
         end
     end
     for _, k in ipairs(bottom_keys) do
@@ -1997,7 +2001,7 @@ function OverlayWidget.computeEndFillExtents(positions_data, screen_h)
         if p then
             local edge = inner_edge_bottom(p)
             if edge < bottom_y then bottom_y = edge end
-            if not p.disabled and p.line_count > 0 then bottom_any_enabled = true end
+            if not p.disabled and p.height_px > 0 then bottom_any_enabled = true end
         end
     end
 
