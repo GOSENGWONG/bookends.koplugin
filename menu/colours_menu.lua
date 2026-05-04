@@ -366,6 +366,7 @@ function Bookends:buildTextColourMenu()
                 local g = string.format("%02X", stored.grey)
                 current_hex = "#" .. g .. g .. g
             end
+            local null_tile_label = (field == "background_color") and _("No background") or nil
             self:showColourPicker(title, current_hex, Colour.defaultHexFor(field),
                 function(new_hex)
                     self.settings:saveSetting(field, Colour.toStorageShape(new_hex))
@@ -383,7 +384,8 @@ function Bookends:buildTextColourMenu()
                     end
                     self:markDirty()
                 end,
-                touchmenu_instance)
+                touchmenu_instance,
+                null_tile_label)
             return
         end
         local byte = (stored and stored.grey) or nil

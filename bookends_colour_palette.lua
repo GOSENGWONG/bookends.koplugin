@@ -80,6 +80,41 @@ function Swatch:paintTo(bb, x, y)
     bb:paintBorder(x, y, self.side, self.side, bw, bc, r)
 end
 
+-- nullTile: a labelled white tile used as the "No background" sentinel.
+-- Rendered at grid position [0,0] of the palette when null_tile is set.
+local function nullTile(label, selected, side, on_tap)
+    local tw = TextWidget:new{
+        text      = label,
+        face      = Font:getFace("ffont", 12),
+        max_width = side - 8,
+    }
+    local frame = FrameContainer:new{
+        bordersize = selected and 3 or 1,
+        padding    = 0,
+        margin     = 0,
+        radius     = 0,
+        background = Blitbuffer.COLOR_WHITE,
+        CenterContainer:new{
+            dimen = Geom:new{ w = side, h = side },
+            tw,
+        },
+    }
+    local container = InputContainer:new{
+        dimen = Geom:new{ w = side, h = side },
+        frame,
+    }
+    container.ges_events = {
+        TapSelect = {
+            GestureRange:new{ ges = "tap", range = container.dimen },
+        },
+    }
+    function container:onTapSelect()
+        on_tap()
+        return true
+    end
+    return container
+end
+
 -- swatchTile: InputContainer wrapping a Swatch for gesture handling.
 local function swatchTile(hex, selected, side, on_tap)
     local swatch = Swatch:new{ hex = hex, selected = selected, side = side }
@@ -132,6 +167,7 @@ local ColourPaletteWidget = FocusManager:extend{
     default_callback = nil,
     revert_callback  = nil,
     ok_callback      = nil,
+    null_tile        = nil,
 }
 
 function ColourPaletteWidget:init()
@@ -214,6 +250,14 @@ function ColourPaletteWidget:update()
     local palette_vgroup = VerticalGroup:new{ align = "center" }
     for row_idx, row_hexes in ipairs(PALETTE) do
         local hgroup = HorizontalGroup:new{ align = "center" }
+        -- Prepend the null tile at grid position [0,0] of the first row only.
+        if row_idx == 1 and self.null_tile then
+            local sel = (self.selected_hex == nil)
+            hgroup[#hgroup + 1] = nullTile(self.null_tile.label, sel, side, function()
+                self.null_tile.on_tap()
+            end)
+            hgroup[#hgroup + 1] = HorizontalSpan:new{ width = gap }
+        end
         for col_idx, hex in ipairs(row_hexes) do
             if col_idx > 1 then
                 hgroup[#hgroup + 1] = HorizontalSpan:new{ width = gap }
@@ -420,7 +464,7 @@ function ColourPaletteWidget:onShow()
 end
 
 -- Public entry point.
-local function showColourPicker(bookends, title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance)
+local function showColourPicker(bookends, title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance, null_tile_label)
     local restoreMenu = bookends:hideMenu(touchmenu_instance)
 
     local closed = false
@@ -449,14 +493,22 @@ local function showColourPicker(bookends, title, current_hex, default_hex, on_ap
             UIManager:close(widget, "ui")
             finish()
         end,
+        null_tile        = null_tile_label and {
+            label  = null_tile_label,
+            on_tap = function()
+                UIManager:close(widget, "ui")
+                if on_default then on_default() end
+                finish()
+            end,
+        } or nil,
     }
     UIManager:show(widget)
 end
 
 local M = {}
 function M.attach(Bookends)
-    function Bookends:showColourPicker(title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance)
-        showColourPicker(self, title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance)
+    function Bookends:showColourPicker(title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance, null_tile_label)
+        showColourPicker(self, title, current_hex, default_hex, on_apply, on_default, on_revert, touchmenu_instance, null_tile_label)
     end
 end
 return M
