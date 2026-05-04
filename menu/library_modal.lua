@@ -168,8 +168,18 @@ function LibraryModal:onTapDismissKeyboard(_arg, ges)
                 and ges.pos:notIntersectWith(kb.dimen) then
             self:_dismissKeyboard()
         end
+        return false
     end
-    return false  -- don't consume; the user's tap already missed any deeper handler
+    -- Keyboard not up: a tap that missed every child AND lands outside the
+    -- visible modal frame is treated as "dismiss the modal". Issue #39.
+    -- Hit-testing uses self.frame.dimen so accidental taps in the empty
+    -- gap *inside* the frame (e.g. between pagination buttons) don't close.
+    if self.frame and self.frame.dimen and ges and ges.pos
+            and ges.pos:notIntersectWith(self.frame.dimen) then
+        UIManager:close(self)
+        return true
+    end
+    return false
 end
 
 function LibraryModal:_buildFrame()
