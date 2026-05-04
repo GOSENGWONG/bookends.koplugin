@@ -25,14 +25,8 @@ end
 -- through them renders as grey on a colour buffer. KOReader exposes parallel
 -- *RGB32 variants for true-colour fills; these wrappers dispatch by colour
 -- type so all the call-sites in paintProgressBar can stay shape-agnostic.
-local function bbPaintRect(bb, x, y, w, h, c)
-    if not c then return end
-    if ffi.istype(ColorRGB32_t, c) then
-        bb:paintRectRGB32(x, y, w, h, c)
-    else
-        bb:paintRect(x, y, w, h, c)
-    end
-end
+-- bbPaintRect is declared as OverlayWidget.bbPaintRect (module export) below
+-- and then aliased to a local for in-file call sites.
 
 local function bbPaintRoundedRect(bb, x, y, w, h, c, r)
     if not c then return end
@@ -53,6 +47,22 @@ local function bbPaintBorder(bb, x, y, w, h, bw, c, r)
 end
 
 local OverlayWidget = {}
+
+--- Dispatch a filled rectangle paint to the correct Blitbuffer variant.
+--- Blitbuffer's plain paintRect flattens its colour to luminance via
+--- getColor8(), so a ColorRGB32 painted through it renders as grey on a
+--- colour buffer. KOReader's *RGB32 variants preserve true colour; this
+--- wrapper dispatches by colour type so callers stay shape-agnostic.
+--- Exported as OverlayWidget.bbPaintRect so main.lua can call it directly.
+function OverlayWidget.bbPaintRect(bb, x, y, w, h, c)
+    if not c then return end
+    if ffi.istype(ColorRGB32_t, c) then
+        bb:paintRectRGB32(x, y, w, h, c)
+    else
+        bb:paintRect(x, y, w, h, c)
+    end
+end
+local bbPaintRect = OverlayWidget.bbPaintRect
 
 -- Default TextWidget options for overlay text.
 -- use_book_text_color ensures text matches the book's color scheme

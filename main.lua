@@ -21,6 +21,7 @@ do
 end
 
 local Blitbuffer = require("ffi/blitbuffer")
+local Colour = require("bookends_colour")
 local Geom = require("ui/geometry")
 local Config = require("bookends_config")
 local ConfirmBox = require("ui/widget/confirmbox")
@@ -1392,8 +1393,62 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
     return bar_colors, text_color, symbol_color
 end
 
+--- Assemble a per-position snapshot for OverlayWidget.computeEndFillExtents.
+--- Returns a table keyed by position key (tl/tc/tr/bl/bc/br); each entry has
+--- { disabled, height_px, v_offset, v_margin } where height_px is the
+--- approximate pixel height of the rendered line stack (#lines × scaled font
+--- size × 1.2 line-height factor). Disabled positions are included so the fill
+--- geometry is stable when a position is toggled off.
+function Bookends:_assembleFillPositionsData()
+    local Screen_local = Device.screen
+    local data = {}
+    for _, pos in ipairs(self.POSITIONS) do
+        local p = self.positions[pos.key] or {}
+        local lines = p.lines or {}
+        local font_size = self:getPositionSetting(pos.key, "font_size")
+        -- Approx px height per line: scaled font size × 1.2 line-height factor.
+        -- Disabled positions never paint, so the approximation only affects
+        -- the fill rect's outer extent on ends where a disabled position is
+        -- the *tallest*. The error budget (a few pixels) is below visual
+        -- noise on a 300dpi screen.
+        local line_height_px = math.floor(Screen_local:scaleBySize(font_size) * 1.2 + 0.5)
+        local v_margin = self:getMargin(pos.key)
+        local v_offset = self:getPositionSetting(pos.key, "v_offset")
+        data[pos.key] = {
+            disabled = p.disabled and true or false,
+            height_px = #lines * line_height_px,
+            v_offset = v_offset,
+            v_margin = v_margin,
+        }
+    end
+    return data
+end
+
 function Bookends:_paintToInner(bb, x, y)
     self._hold_rects = {}
+
+    -- Background fill: paint behind progress bars and text. See spec
+    -- docs/superpowers/specs/2026-05-04-bookends-background-fill-design.md
+    do
+        local bg = self.settings:readSetting("background_color")
+        if bg then
+            local bg_color = Colour.parseColorValue(bg, Screen:isColorEnabled())
+            if bg_color then
+                local screen_size_local = Screen:getSize()
+                local screen_w_local = screen_size_local.w
+                local screen_h_local = screen_size_local.h
+                local positions_data = self:_assembleFillPositionsData()
+                local extents = OverlayWidget.computeEndFillExtents(positions_data, screen_h_local)
+                if extents.top_any_enabled and extents.top_y > 0 then
+                    OverlayWidget.bbPaintRect(bb, x, y, screen_w_local, extents.top_y, bg_color)
+                end
+                if extents.bottom_any_enabled and extents.bottom_y < screen_h_local then
+                    local h = screen_h_local - extents.bottom_y
+                    OverlayWidget.bbPaintRect(bb, x, y + extents.bottom_y, screen_w_local, h, bg_color)
+                end
+            end
+        end
+    end
 
     local screen_size = Screen:getSize()
     local screen_w = screen_size.w
