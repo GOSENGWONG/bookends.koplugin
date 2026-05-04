@@ -1964,4 +1964,49 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
     end
 end
 
+--- Compute per-end fill extents for the Background colour feature.
+--- @param positions_data table: keyed by tl/tc/tr/bl/bc/br. Each entry has:
+---   { disabled = bool, line_count = N, line_height_px = H,
+---     v_offset = V, v_margin = M }
+--- @param screen_h number: pixel screen height
+--- @return table { top_y, bottom_y, top_any_enabled, bottom_any_enabled }
+function OverlayWidget.computeEndFillExtents(positions_data, screen_h)
+    local function inner_edge_top(p)
+        return p.v_offset + p.v_margin + p.line_count * p.line_height_px
+    end
+    local function inner_edge_bottom(p)
+        return screen_h - p.v_offset - p.v_margin - p.line_count * p.line_height_px
+    end
+
+    local top_keys = { "tl", "tc", "tr" }
+    local bottom_keys = { "bl", "bc", "br" }
+
+    local top_y, bottom_y = 0, screen_h
+    local top_any_enabled, bottom_any_enabled = false, false
+
+    for _, k in ipairs(top_keys) do
+        local p = positions_data[k]
+        if p then
+            local edge = inner_edge_top(p)
+            if edge > top_y then top_y = edge end
+            if not p.disabled and p.line_count > 0 then top_any_enabled = true end
+        end
+    end
+    for _, k in ipairs(bottom_keys) do
+        local p = positions_data[k]
+        if p then
+            local edge = inner_edge_bottom(p)
+            if edge < bottom_y then bottom_y = edge end
+            if not p.disabled and p.line_count > 0 then bottom_any_enabled = true end
+        end
+    end
+
+    return {
+        top_y = top_y,
+        bottom_y = bottom_y,
+        top_any_enabled = top_any_enabled,
+        bottom_any_enabled = bottom_any_enabled,
+    }
+end
+
 return OverlayWidget

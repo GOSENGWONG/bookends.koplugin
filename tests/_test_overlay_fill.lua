@@ -1,0 +1,103 @@
+-- Pure-Lua test for OverlayWidget.computeEndFillExtents.
+-- Run: cd into the plugin dir, then `lua tests/_test_overlay_fill.lua`.
+package.loaded["ffi"] = {
+    typeof = function() return function() return {} end end,
+    istype = function() return false end,
+}
+package.loaded["ffi/blitbuffer"] = {
+    ColorRGB32 = function() return {} end,
+    Color8 = function() return {} end,
+}
+package.loaded["ffi/utf8proc"] = {}
+package.loaded["device"] = { screen = { scaleBySize = function(_, n) return n end, isColorEnabled = function() return false end, getSize = function() return {w=600,h=800} end } }
+package.loaded["ui/font"] = { fontmap = {} }
+package.loaded["ui/widget/textwidget"] = {}
+package.loaded["bookends_colour"] = { parseColorValue = function() return nil end }
+
+local OverlayWidget = dofile("bookends_overlay_widget.lua")
+
+local pass, fail = 0, 0
+local function test(name, fn)
+    local ok, err = pcall(fn)
+    if ok then pass = pass + 1
+    else fail = fail + 1; io.stderr:write("FAIL  " .. name .. "\n  " .. tostring(err) .. "\n") end
+end
+local function eq(a, b, msg)
+    if a ~= b then error((msg or "") .. " expected=" .. tostring(b) .. " got=" .. tostring(a), 2) end
+end
+
+local SCREEN_H = 800
+
+local function pos(line_count, line_height_px, v_offset, v_margin, disabled)
+    return { line_count = line_count or 0, line_height_px = line_height_px or 24,
+             v_offset = v_offset or 0, v_margin = v_margin or 0,
+             disabled = disabled or false }
+end
+
+test("all six empty: no fill on either end", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(0), tc = pos(0), tr = pos(0),
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_any_enabled, false)
+    eq(r.bottom_any_enabled, false)
+    eq(r.top_y, 0)
+    eq(r.bottom_y, SCREEN_H)
+end)
+
+test("top has 1 enabled (tc, 2 lines @ 24px, 0 offset/margin): fill = 0..48", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(0), tc = pos(2, 24), tr = pos(0),
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_any_enabled, true)
+    eq(r.top_y, 48)
+    eq(r.bottom_any_enabled, false)
+end)
+
+test("top: max across enabled positions wins", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(1, 24), tc = pos(3, 24), tr = pos(2, 24),
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_y, 72)  -- tc has 3 lines × 24px
+end)
+
+test("bottom: min y wins (max height from screen bottom)", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(0), tc = pos(0), tr = pos(0),
+        bl = pos(1, 24), bc = pos(3, 24), br = pos(2, 24),
+    }, SCREEN_H)
+    eq(r.bottom_any_enabled, true)
+    eq(r.bottom_y, SCREEN_H - 72)  -- bc with 3 lines × 24px wins
+end)
+
+test("disabled position still contributes height (A+C rule)", function()
+    -- tc has 3 disabled lines, tl has 1 enabled. Fill should still be max(tl,tc) = tc's 72.
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(1, 24, 0, 0, false), tc = pos(3, 24, 0, 0, true), tr = pos(0),
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_any_enabled, true)
+    eq(r.top_y, 72)  -- tc's disabled-but-configured height counts toward fill
+end)
+
+test("all-disabled end: any_enabled is false even if line_count > 0", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(2, 24, 0, 0, true), tc = pos(0), tr = pos(1, 24, 0, 0, true),
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_any_enabled, false)
+    eq(r.top_y, 48)  -- top_y is still computed from configured heights, but caller skips per top_any_enabled
+end)
+
+test("v_offset and v_margin shift the fill edge outward", function()
+    local r = OverlayWidget.computeEndFillExtents({
+        tl = pos(0), tc = pos(2, 24, 5, 10), tr = pos(0),  -- +15 px offset+margin
+        bl = pos(0), bc = pos(0), br = pos(0),
+    }, SCREEN_H)
+    eq(r.top_y, 5 + 10 + 2 * 24)  -- 63
+end)
+
+io.write(string.format("%d pass / %d fail\n", pass, fail))
+os.exit(fail == 0 and 0 or 1)
