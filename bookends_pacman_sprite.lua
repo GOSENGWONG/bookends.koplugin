@@ -29,18 +29,20 @@ local Pacman = {}
 Pacman.SPRITE_SIZE = 13
 
 -- Open frame. Mouth tip at row 6 col 3 (column 4 is the first cleared
--- cell on the wedge axis — well past the centre column 6).
+-- cell on the wedge axis — well past the centre column 6). Rows 3
+-- and 9 lose one cell from the right edge so the upper and lower
+-- "lips" curl in a row earlier than the shoulder.
 local OPEN_FRAME = {
     0x1F0,  -- row  0: ....XXXXX....
     0x7FC,  -- row  1: ..XXXXXXXXX..
     0xFFE,  -- row  2: .XXXXXXXXXXX.
-    0xFFE,  -- row  3: .XXXXXXXXXXX.
+    0x7FE,  -- row  3: .XXXXXXXXXX.. (upper lip)
     0x0FF,  -- row  4: XXXXXXXX.....
     0x03F,  -- row  5: XXXXXX.......
     0x00F,  -- row  6: XXXX......... (mouth tip)
     0x03F,  -- row  7: XXXXXX.......
     0x0FF,  -- row  8: XXXXXXXX.....
-    0xFFE,  -- row  9: .XXXXXXXXXXX.
+    0x7FE,  -- row  9: .XXXXXXXXXX.. (lower lip)
     0xFFE,  -- row 10: .XXXXXXXXXXX.
     0x7FC,  -- row 11: ..XXXXXXXXX..
     0x1F0,  -- row 12: ....XXXXX....
