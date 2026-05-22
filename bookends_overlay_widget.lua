@@ -1423,14 +1423,26 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         local cross_offset = math.floor((thickness - sprite_px) / 2)
 
         -- Paint sprite. For each "on" cell in the 13x13 grid, draw a
-        -- block-sized rect. (col, row) in sprite space -> device coords.
+        -- block-sized rect.
+        --
+        -- Horizontal bars: sprite col maps to the bar's progress axis
+        --   (the wedge sits on the right edge of the right-facing base sprite).
+        -- Vertical bars: the sprite is rotated so its wedge ends up on the
+        --   row axis (top or bottom of the grid), so row maps to the bar's
+        --   progress axis instead.
         if pac_fill then
             for row = 0, 12 do
                 for col = 0, 12 do
                     local mask = 2 ^ col
                     if (math.floor(sprite[row + 1] / mask) % 2) == 1 then
-                        local axis_off = sprite_start + col * block
-                        local cross_off = cross_offset + row * block
+                        local axis_off, cross_off
+                        if vertical then
+                            axis_off = sprite_start + row * block
+                            cross_off = cross_offset + col * block
+                        else
+                            axis_off = sprite_start + col * block
+                            cross_off = cross_offset + row * block
+                        end
                         -- `ox` is the progress-axis origin, `oy` the cross-axis
                         -- origin: in vertical mode `ox` == screen y and `oy` ==
                         -- screen x, so `rect_x` gets `oy` and `rect_y` gets `ox`.
