@@ -86,12 +86,31 @@ test("open frame: strictly fewer cells than closed (wedge removed)", function()
     truthy(open_n < closed_n, "open=" .. open_n .. " closed=" .. closed_n)
 end)
 
-test("open frame: left half (dx<=0) matches closed frame", function()
-    -- Wedge only affects dx > 0; the left half should be identical.
+test("open frame is a subset of closed frame", function()
+    -- The seam is a strict subset of the wedge, so every "on" cell in
+    -- the open frame must also be on in the closed frame.
     local open = Pacman.getFrame("open")
     local closed = Pacman.getFrame("closed")
     for y = 0, 12 do
-        for x = 0, 6 do
+        for x = 0, 12 do
+            if bit(open, x, y) then
+                truthy(bit(closed, x, y),
+                    "open is on but closed is off at (" .. x .. "," .. y .. ")")
+            end
+        end
+    end
+end)
+
+test("open frame: cols 0..3 are always disc-only (left of the wedge apex)", function()
+    -- The wedge apex sits at col 4 (dx = -2), so cells in cols 0..3
+    -- (dx <= -3) are never cleared by the wedge. There they reduce to
+    -- "in the disc?".
+    local open = Pacman.getFrame("open")
+    local closed = Pacman.getFrame("closed")
+    for y = 0, 12 do
+        for x = 0, 3 do
+            -- Closed at cols 0..3 is also purely "in the disc" (seam is
+            -- on the opposite side), so they should match.
             eq(bit(open, x, y), bit(closed, x, y),
                 "open != closed at (" .. x .. "," .. y .. ")")
         end
@@ -108,11 +127,16 @@ test("open frame: vertically symmetric (wedge is symmetric about midline)", func
     end
 end)
 
-test("open frame: mouth tip cells are off (apex at centre)", function()
-    -- (7, 6) is one cell right of centre, on the wedge axis -> should be off.
+test("open frame: mouth cuts past the centre", function()
+    -- Wedge apex sits at col 4 (two cells past centre col 6), so the
+    -- centre cell and one cell to its left are also cleared by the
+    -- wedge — i.e. the mouth bites past the middle of the disc.
     local f = Pacman.getFrame("open")
-    eq(bit(f, 7, 6), false, "(7,6) should be in wedge")
-    eq(bit(f, 8, 6), false, "(8,6) should be in wedge")
+    eq(bit(f, 6, 6), false, "(6,6) centre should be cleared")
+    eq(bit(f, 5, 6), false, "(5,6) should be cleared")
+    eq(bit(f, 4, 6), false, "(4,6) apex should be cleared")
+    -- One cell further left is outside the wedge — it's in the disc.
+    eq(bit(f, 3, 6), true,  "(3,6) outside wedge should remain on")
 end)
 
 test("unknown frame raises", function()

@@ -33,27 +33,33 @@ local function buildFrame(predicate)
     return rows
 end
 
--- Cells inside the filled disc: (x-6)^2 + (y-6)^2 <= r^2 + 0.5
--- The +0.5 fudge softens the right/bottom edges so the disc looks like a
--- proper circle at 13x13 rather than a cross-stitched diamond.
+-- Cells inside the filled disc: (x-6)^2 + (y-6)^2 <= 40.
+-- r^2 = 40 (rather than the geometric 36) widens the disc just enough to
+-- give a chunky arcade silhouette — flat 5-wide top/bottom/left/right
+-- edges (cols 4..8 or rows 4..8) instead of single-pixel cardinal spikes.
 local function inDisc(x, y)
     local dx, dy = x - 6, y - 6
-    return (dx * dx + dy * dy) <= (6 * 6 + 0.5)
+    return (dx * dx + dy * dy) <= 40
 end
 
 -- Open frame: filled disc minus a triangular wedge.
--- The wedge apex is at (6,6); it opens rightward with half-angle ~35
--- degrees, so a cell is in the wedge when dx > 0 and |dy| <= dx * 0.7
--- (tan 35 deg ~ 0.7). Cells at dx <= 0 are never in the wedge.
+-- The wedge apex sits at column 4 (two cells past the centre, col 6) —
+-- arcade pacman's mouth cuts deep into the body, not just to the centre.
+-- The wedge opens rightward at half-angle ~35 deg (tan 35 ~ 0.7), so a
+-- cell is in the wedge when its x is at or right of the apex AND
+-- |dy| <= 0.7 * (dx + 2). Cells left of the apex (dx < -2) are never
+-- in the wedge.
 local function inOpenWedge(x, y)
     local dx, dy = x - 6, y - 6
-    if dx <= 0 then return false end
-    return math.abs(dy) <= dx * 0.7
+    if dx < -2 then return false end
+    return math.abs(dy) <= 0.7 * (dx + 2)
 end
 
 -- Closed frame seam: a short horizontal notch at the leading edge,
 -- mid-row, so the closed silhouette reads as "mouth closed" instead of
--- a perfect circle. Three cells: (10,6), (11,6), (12,6).
+-- a perfect blob. Three cells: (10,6), (11,6), (12,6). Note the seam is
+-- a strict subset of the open wedge, so open ⊆ closed (every "on" cell
+-- in the open frame is also on in the closed frame).
 local function inClosedSeam(x, y)
     local dx, dy = x - 6, y - 6
     return dy == 0 and dx >= 4

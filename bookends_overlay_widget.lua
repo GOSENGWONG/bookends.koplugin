@@ -1420,12 +1420,20 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
         -- `length` and `thickness` are already in scope from the function preamble.
         local fraction_px = math.floor(fraction * length)
 
-        -- Sprite leading-edge position along the fill axis. The sprite
-        -- centre sits at the read fraction; clamp so the sprite always fits
-        -- inside the bar.
-        local sprite_start = math.floor(fraction_px - sprite_px / 2)
-        sprite_start = math.max(0, math.min(length - sprite_px, sprite_start))
-        if reverse then sprite_start = length - sprite_px - sprite_start end
+        -- We track two positions on the fill axis:
+        --   * `pacman_canonical_start` — canonical (un-mirrored) leading-edge
+        --     of pacman. Grows from 0 to length-sprite_px regardless of
+        --     direction. Used to decide which dots are still ahead of the
+        --     reader.
+        --   * `sprite_start` — the actual paint coordinate. Same as the
+        --     canonical position for forward bars; mirrored about the bar's
+        --     centre for reversed bars.
+        local pacman_canonical_start = math.floor(fraction_px - sprite_px / 2)
+        pacman_canonical_start = math.max(0, math.min(length - sprite_px, pacman_canonical_start))
+        local pacman_canonical_lead = pacman_canonical_start + sprite_px
+        local sprite_start = reverse
+            and (length - sprite_px - pacman_canonical_start)
+            or pacman_canonical_start
 
         -- Perpendicular axis: centre the sprite on the bar midline.
         local cross_offset = math.floor((thickness - sprite_px) / 2)
@@ -1468,55 +1476,51 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
             end
         end
 
-        -- Dot strip + pellet: unread region runs from sprite_end to length.
-        -- For reversed bars, mirror the layout to the other side.
+        -- Dot strip + pellet. Dots sit at FIXED canonical positions on
+        -- the bar (independent of pacman). On each paint we filter to the
+        -- dots still ahead of pacman's leading edge — the rest are
+        -- "eaten". This keeps dots anchored to the bar instead of
+        -- shifting around as pacman moves.
         local dot_block = math.max(3, math.floor(thickness / 6))
         local pellet_block = dot_block * 2
-        local sprite_end_axis = sprite_start + sprite_px
-        local unread_start, unread_length
-        if reverse then
-            unread_start = 0
-            unread_length = sprite_start
-        else
-            unread_start = sprite_end_axis
-            unread_length = length - sprite_end_axis
-        end
 
-        if pac_dot and unread_length > 0 then
-            local layout = PacmanSprite.layoutDots(unread_length, dot_block, pellet_block)
+        if pac_dot then
+            local layout = PacmanSprite.layoutDots(length, dot_block, pellet_block)
             local dot_cross = math.floor((thickness - dot_block) / 2)
             local pellet_cross = math.floor((thickness - pellet_block) / 2)
 
-            -- Convert an offset in unread-local coords (0 = near sprite,
-            -- unread_length = far end) to actual bar coords. For reversed
-            -- bars, mirror so the pellet lands at the FAR end of the bar
-            -- (opposite the sprite), not just on the sprite-side of the
-            -- unread strip.
-            local function placePos(offset, element_block)
+            -- Map a canonical bar position (0..length) to its actual
+            -- paint coord. For reversed bars, mirror about the bar centre
+            -- so the pellet lands at the far end (opposite pacman's start).
+            local function toActual(canonical_pos, element_block)
                 if reverse then
-                    return unread_start + unread_length - offset - element_block
+                    return length - canonical_pos - element_block
                 else
-                    return unread_start + offset
+                    return canonical_pos
                 end
             end
 
-            -- Paint dots.
-            for _idx, offset in ipairs(layout.dots) do
-                local axis = placePos(offset, dot_block)
-                local rect_x, rect_y
-                if vertical then
-                    rect_x = oy + dot_cross
-                    rect_y = ox + axis
-                else
-                    rect_x = ox + axis
-                    rect_y = oy + dot_cross
+            -- Paint dots whose canonical position is still ahead of
+            -- pacman's leading edge.
+            for _idx, canonical_dot in ipairs(layout.dots) do
+                if canonical_dot >= pacman_canonical_lead then
+                    local axis = toActual(canonical_dot, dot_block)
+                    local rect_x, rect_y
+                    if vertical then
+                        rect_x = oy + dot_cross
+                        rect_y = ox + axis
+                    else
+                        rect_x = ox + axis
+                        rect_y = oy + dot_cross
+                    end
+                    bbPaintRect(bb, rect_x, rect_y, dot_block, dot_block, pac_dot)
                 end
-                bbPaintRect(bb, rect_x, rect_y, dot_block, dot_block, pac_dot)
             end
 
-            -- Paint pellet (if room).
-            if layout.pellet then
-                local axis = placePos(layout.pellet, pellet_block)
+            -- Pellet at the far canonical end of the bar; paint until
+            -- pacman has reached it.
+            if layout.pellet and layout.pellet >= pacman_canonical_lead then
+                local axis = toActual(layout.pellet, pellet_block)
                 local rect_x, rect_y
                 if vertical then
                     rect_x = oy + pellet_cross
