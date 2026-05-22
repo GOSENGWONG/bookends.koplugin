@@ -1,14 +1,25 @@
 --[[
 Pacman progress-bar sprite + layout helpers.
 
-The character sprite is generated at module load from a geometric formula:
-a filled disc on a 13x13 grid (radius 6, centred at (6,6)), with the OPEN
-frame having a triangular wedge cleared from the right side. The base
-orientation faces right; rotations for up/down/left are produced from the
-base by a generic 90-degree CW step rotator.
+The 13x13 frames are hand-authored bit patterns chosen to read as a
+chunky arcade silhouette: a flat 5-wide top and bottom, a 11-wide
+shoulder band where the disc holds its full width, and an open-frame
+wedge that bites deep into the body past the horizontal centre line.
+
+Earlier versions generated the bits from a geometric formula (disc
+minus wedge), but a strict circle minus a triangle produces an
+hourglass body — the wedge cuts too aggressively through the rows next
+to the centre. Holding the shoulder rows wide gives the chunky read
+that a smooth taper can't.
 
 Sprite data layout: each frame is a 13-element array. Element i is an
 integer whose low 13 bits encode row i of the grid (bit 0 = column 0).
+Each row literal is annotated with an ASCII strip so the silhouette is
+visible in diff.
+
+The OPEN frame is a strict subset of the CLOSED frame — every "on"
+cell in OPEN is also on in CLOSED. The seam in CLOSED is a 3-cell
+notch at row 6 cols 10..12, which falls inside the OPEN wedge.
 
 Pure Lua. No KOReader imports.
 ]]
@@ -17,61 +28,42 @@ local Pacman = {}
 
 Pacman.SPRITE_SIZE = 13
 
--- Build a 13x13 frame from a per-cell predicate.
--- predicate(x, y) returns true when the cell at (x, y) is "on".
-local function buildFrame(predicate)
-    local rows = {}
-    for y = 0, 12 do
-        local bits = 0
-        for x = 0, 12 do
-            if predicate(x, y) then
-                bits = bits + 2 ^ x
-            end
-        end
-        rows[y + 1] = bits
-    end
-    return rows
-end
+-- Open frame. Mouth tip at row 6 col 3 (column 4 is the first cleared
+-- cell on the wedge axis — well past the centre column 6).
+local OPEN_FRAME = {
+    0x1F0,  -- row  0: ....XXXXX....
+    0x7FC,  -- row  1: ..XXXXXXXXX..
+    0xFFE,  -- row  2: .XXXXXXXXXXX.
+    0xFFE,  -- row  3: .XXXXXXXXXXX.
+    0x0FF,  -- row  4: XXXXXXXX.....
+    0x03F,  -- row  5: XXXXXX.......
+    0x00F,  -- row  6: XXXX......... (mouth tip)
+    0x03F,  -- row  7: XXXXXX.......
+    0x0FF,  -- row  8: XXXXXXXX.....
+    0xFFE,  -- row  9: .XXXXXXXXXXX.
+    0xFFE,  -- row 10: .XXXXXXXXXXX.
+    0x7FC,  -- row 11: ..XXXXXXXXX..
+    0x1F0,  -- row 12: ....XXXXX....
+}
 
--- Cells inside the filled disc: (x-6)^2 + (y-6)^2 <= 40.
--- r^2 = 40 (rather than the geometric 36) widens the disc just enough to
--- give a chunky arcade silhouette — flat 5-wide top/bottom/left/right
--- edges (cols 4..8 or rows 4..8) instead of single-pixel cardinal spikes.
-local function inDisc(x, y)
-    local dx, dy = x - 6, y - 6
-    return (dx * dx + dy * dy) <= 40
-end
-
--- Open frame: filled disc minus a triangular wedge.
--- The wedge apex sits at column 4 (two cells past the centre, col 6) —
--- arcade pacman's mouth cuts deep into the body, not just to the centre.
--- The wedge opens rightward at half-angle ~35 deg (tan 35 ~ 0.7), so a
--- cell is in the wedge when its x is at or right of the apex AND
--- |dy| <= 0.7 * (dx + 2). Cells left of the apex (dx < -2) are never
--- in the wedge.
-local function inOpenWedge(x, y)
-    local dx, dy = x - 6, y - 6
-    if dx < -2 then return false end
-    return math.abs(dy) <= 0.7 * (dx + 2)
-end
-
--- Closed frame seam: a short horizontal notch at the leading edge,
--- mid-row, so the closed silhouette reads as "mouth closed" instead of
--- a perfect blob. Three cells: (10,6), (11,6), (12,6). Note the seam is
--- a strict subset of the open wedge, so open ⊆ closed (every "on" cell
--- in the open frame is also on in the closed frame).
-local function inClosedSeam(x, y)
-    local dx, dy = x - 6, y - 6
-    return dy == 0 and dx >= 4
-end
-
-local OPEN_FRAME = buildFrame(function(x, y)
-    return inDisc(x, y) and not inOpenWedge(x, y)
-end)
-
-local CLOSED_FRAME = buildFrame(function(x, y)
-    return inDisc(x, y) and not inClosedSeam(x, y)
-end)
+-- Closed frame. Same chunky body, full-width through rows 4..8, with
+-- a 3-cell horizontal notch at row 6 cols 10..12 so the closed shape
+-- doesn't read as a featureless blob.
+local CLOSED_FRAME = {
+    0x1F0,   -- row  0: ....XXXXX....
+    0x7FC,   -- row  1: ..XXXXXXXXX..
+    0xFFE,   -- row  2: .XXXXXXXXXXX.
+    0xFFE,   -- row  3: .XXXXXXXXXXX.
+    0x1FFF,  -- row  4: XXXXXXXXXXXXX
+    0x1FFF,  -- row  5: XXXXXXXXXXXXX
+    0x3FF,   -- row  6: XXXXXXXXXX... (3-cell seam at cols 10..12)
+    0x1FFF,  -- row  7: XXXXXXXXXXXXX
+    0x1FFF,  -- row  8: XXXXXXXXXXXXX
+    0xFFE,   -- row  9: .XXXXXXXXXXX.
+    0xFFE,   -- row 10: .XXXXXXXXXXX.
+    0x7FC,   -- row 11: ..XXXXXXXXX..
+    0x1F0,   -- row 12: ....XXXXX....
+}
 
 -- Read-only sprite accessor. Returns the array directly; callers must not
 -- mutate it.
