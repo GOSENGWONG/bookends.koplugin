@@ -1500,13 +1500,14 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                 end
             end
 
-            -- Paint dots whose canonical position is still ahead of —
-            -- or overlaps pacman's leading edge by at most one pixel.
-            -- Without the +1 grace, a dot vanishes the instant pacman's
-            -- leading edge reaches it, so the "bite" never lands on
-            -- screen.
+            -- Paint each marker until the leading edge has crossed its
+            -- entire footprint. Vanishing the marker the moment the
+            -- leading edge first reaches it goes by too fast to read at
+            -- typical page-turn cadence; holding it through dot_block
+            -- pixels of overlap gives a couple of frames where the
+            -- contact is visible before it disappears.
             for _idx, canonical_dot in ipairs(layout.dots) do
-                if canonical_dot + 1 >= pacman_canonical_lead then
+                if canonical_dot + dot_block > pacman_canonical_lead then
                     local axis = toActual(canonical_dot, dot_block)
                     local rect_x, rect_y
                     if vertical then
