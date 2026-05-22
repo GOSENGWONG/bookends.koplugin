@@ -5,7 +5,12 @@ local Device = require("device")
 local Font = require("ui/font")
 local TextWidget = require("ui/widget/textwidget")
 local Utf8Proc = require("ffi/utf8proc")
+local PacmanSprite = require("bookends_pacman_sprite")
 local Screen = Device.screen
+
+-- Pacman bar paint counter: parity drives mouth-open vs mouth-closed.
+-- Resets on plugin reload; no persistence needed.
+local _pacman_paint_count = 0
 
 local ColorRGB32_t = ffi.typeof("ColorRGB32")
 
@@ -1365,6 +1370,151 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
                 bbPaintRoundedRect(bb, dot_cx, dot_dy, dot_r * 2, dot_r * 2, wave_dot, dot_r)
             end
         end
+
+    elseif style == "pacman" then
+        -- Pacman bar: read portion is empty, pacman sprite at the read
+        -- fraction, dot strip and power pellet in the unread region. Mouth
+        -- flips between open and closed on every entry to this branch.
+        _pacman_paint_count = _pacman_paint_count + 1
+        local mouth_open = (_pacman_paint_count % 2) == 1
+
+        -- Resolve colours. Authentic arcade hex on colour-enabled devices;
+        -- strong greyscale defaults on B&W. Custom overrides via the existing
+        -- per-bar colors table flow through resolveColor as elsewhere.
+        local Colour = require("bookends_colour")
+        local Screen = require("device").screen
+        local is_colour = Screen and Screen.isColorEnabled and Screen:isColorEnabled()
+        local default_fill, default_dot
+        if is_colour then
+            default_fill = Colour.parseColorValue({ hex = "#FFCC00" }, true)
+            default_dot  = Colour.parseColorValue({ hex = "#FFB897" }, true)
+        else
+            default_fill = Blitbuffer.COLOR_BLACK
+            default_dot  = Blitbuffer.COLOR_DARK_GRAY
+        end
+        local pac_fill = resolveColor(custom_fill, default_fill)
+        local pac_dot  = resolveColor(custom_bg, default_dot)
+
+        -- Pick frame + rotation. Direction "ltr"/"rtl" map to right/left;
+        -- "ttb"/"btt" map to down/up.
+        local dir_map = { ltr = "right", rtl = "left", ttb = "down", btt = "up" }
+        local facing = dir_map[orientation == "vertical"
+            and (reverse and "btt" or "ttb")
+            or (reverse and "rtl" or "ltr")] or "right"
+        local frame_name = mouth_open and "open" or "closed"
+        local sprite = PacmanSprite.rotate(
+            PacmanSprite.getFrame(frame_name),
+            PacmanSprite.directionToSteps(facing))
+
+        -- Block scale: at least 1 device px per arcade pixel. The sprite
+        -- ends up 13*block device px in size.
+        local block = math.max(1, math.floor(thickness / 14))
+        local sprite_px = 13 * block
+
+        -- Compute the fill axis (along the bar length).
+        local length = vertical and h or w
+        local fraction_px = math.floor(fraction * length)
+
+        -- Sprite leading-edge position along the fill axis. The sprite
+        -- centre sits at the read fraction; clamp so the sprite always fits
+        -- inside the bar.
+        local sprite_start = math.floor(fraction_px - sprite_px / 2)
+        sprite_start = math.max(0, math.min(length - sprite_px, sprite_start))
+        if reverse then sprite_start = length - sprite_px - sprite_start end
+
+        -- Perpendicular axis: centre the sprite on the bar midline.
+        local cross_offset = math.floor((thickness - sprite_px) / 2)
+
+        -- Paint sprite. For each "on" cell in the 13x13 grid, draw a
+        -- block-sized rect. (col, row) in sprite space -> device coords.
+        if pac_fill then
+            for row = 0, 12 do
+                for col = 0, 12 do
+                    local mask = 2 ^ col
+                    if (math.floor(sprite[row + 1] / mask) % 2) == 1 then
+                        local axis_off = sprite_start + col * block
+                        local cross_off = cross_offset + row * block
+                        local rect_x, rect_y, rect_w, rect_h
+                        if vertical then
+                            rect_x = ox + cross_off
+                            rect_y = oy + axis_off
+                            rect_w = block
+                            rect_h = block
+                        else
+                            rect_x = ox + axis_off
+                            rect_y = oy + cross_off
+                            rect_w = block
+                            rect_h = block
+                        end
+                        bbPaintRect(bb, rect_x, rect_y, rect_w, rect_h, pac_fill)
+                    end
+                end
+            end
+        end
+
+        -- Dot strip + pellet: unread region runs from sprite_end to length.
+        -- For reversed bars, mirror the layout to the other side.
+        local dot_block = math.max(2, math.floor(thickness / 8))
+        local pellet_block = dot_block * 2
+        local sprite_end_axis = sprite_start + sprite_px
+        local unread_start, unread_length
+        if reverse then
+            unread_start = 0
+            unread_length = sprite_start
+        else
+            unread_start = sprite_end_axis
+            unread_length = length - sprite_end_axis
+        end
+
+        if pac_dot and unread_length > 0 then
+            local layout = PacmanSprite.layoutDots(unread_length, dot_block, pellet_block)
+            local dot_cross = math.floor((thickness - dot_block) / 2)
+            local pellet_cross = math.floor((thickness - pellet_block) / 2)
+
+            -- Convert an offset in unread-local coords (0 = near sprite,
+            -- unread_length = far end) to actual bar coords. For reversed
+            -- bars, mirror so the pellet lands at the FAR end of the bar
+            -- (opposite the sprite), not just on the sprite-side of the
+            -- unread strip.
+            local function placePos(offset, element_block)
+                if reverse then
+                    return unread_start + unread_length - offset - element_block
+                else
+                    return unread_start + offset
+                end
+            end
+
+            -- Paint dots.
+            for _, offset in ipairs(layout.dots) do
+                local axis = placePos(offset, dot_block)
+                local rect_x, rect_y
+                if vertical then
+                    rect_x = ox + dot_cross
+                    rect_y = oy + axis
+                else
+                    rect_x = ox + axis
+                    rect_y = oy + dot_cross
+                end
+                bbPaintRect(bb, rect_x, rect_y, dot_block, dot_block, pac_dot)
+            end
+
+            -- Paint pellet (if room).
+            if layout.pellet then
+                local axis = placePos(layout.pellet, pellet_block)
+                local rect_x, rect_y
+                if vertical then
+                    rect_x = ox + pellet_cross
+                    rect_y = oy + axis
+                else
+                    rect_x = ox + axis
+                    rect_y = oy + pellet_cross
+                end
+                bbPaintRect(bb, rect_x, rect_y, pellet_block, pellet_block, pac_dot)
+            end
+        end
+
+        -- Chapter ticks intentionally not rendered for pacman (the strip is
+        -- already dot-dense and tick markers don't read at this density).
 
     elseif style == "radial" or style == "radial_hollow" then
         -- Radial (pie-chart) style: a circle filled clockwise from 12 o'clock.
