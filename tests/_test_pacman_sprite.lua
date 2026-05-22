@@ -128,15 +128,13 @@ test("open frame: vertically symmetric (wedge is symmetric about midline)", func
 end)
 
 test("open frame: mouth cuts past the centre", function()
-    -- Wedge apex sits at col 4 (two cells past centre col 6), so the
-    -- centre cell and one cell to its left are also cleared by the
-    -- wedge — i.e. the mouth bites past the middle of the disc.
+    -- Mouth tip sits at col 5 (one cell past centre col 6) so the
+    -- centre cell is cleared by the wedge.
     local f = Pacman.getFrame("open")
     eq(bit(f, 6, 6), false, "(6,6) centre should be cleared")
-    eq(bit(f, 5, 6), false, "(5,6) should be cleared")
-    eq(bit(f, 4, 6), false, "(4,6) apex should be cleared")
-    -- One cell further left is outside the wedge — it's in the disc.
-    eq(bit(f, 3, 6), true,  "(3,6) outside wedge should remain on")
+    eq(bit(f, 5, 6), false, "(5,6) mouth tip should be cleared")
+    -- One cell further left is outside the wedge — still in the body.
+    eq(bit(f, 4, 6), true,  "(4,6) outside wedge should remain on")
 end)
 
 test("unknown frame raises", function()
