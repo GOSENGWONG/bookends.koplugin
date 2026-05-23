@@ -460,11 +460,6 @@ local function stubUiWithStats(stats)
     local cur_duration = pick("current_duration", 0)
     local today_pages    = pick("today_pages", 0)
     local today_duration = pick("today_duration", 0)
-    -- Pre-populate the first-open cache for this book if a value is provided.
-    if stats.first_open_ts and id_curr_book then
-        Tokens._first_open_cache = Tokens._first_open_cache or {}
-        Tokens._first_open_cache[id_curr_book] = stats.first_open_ts
-    end
     return {
         view = { state = { page = 5 } },
         document = {
@@ -857,11 +852,11 @@ test("page_num: CRE scroll mode uses document:getCurrentPage(), not stale view.s
     eq(r, "42/100 42%")
 end)
 
-test("days_reading_book: 14 days from cached first-open ts", function()
-    local fourteen_days_ago = os.time() - (14 * 86400)
-    local ui = stubUiWithStats({ first_open_ts = fourteen_days_ago, id_curr_book = 100 })
-    local s = Tokens.buildConditionState(ui, 0, 0)
-    eq(s.days_reading_book, 14)
+test("days_reading_book: from distinct-reading-days cache", function()
+    local ui = stubUiWithStats({ id_curr_book = 100 })
+    local cache = { book_distinct_days = 5 }
+    local s = Tokens.buildConditionState(ui, 0, 0, nil, cache)
+    eq(s.days_reading_book, 5)
 end)
 
 test("days_reading_book: 0 when stats absent", function()
@@ -873,17 +868,22 @@ test("days_reading_book: 0 when stats absent", function()
     eq(s.days_reading_book, 0)
 end)
 
-test("pages_per_day: book_pages_read / days_reading_book", function()
-    local fourteen_days_ago = os.time() - (14 * 86400)
-    local ui = stubUiWithStats({ book_read_pages = 70, first_open_ts = fourteen_days_ago, id_curr_book = 101 })
-    local s = Tokens.buildConditionState(ui, 0, 0)
-    eq(s.pages_per_day, 5)
+test("pages_per_day: book_pages_read / distinct_reading_days (14pp/day)", function()
+    -- 70 pages over 5 reading days = 14 pp/day. Same book that previously
+    -- read as 5 pp/day when divided by 14 calendar-days-since-first-open;
+    -- the new semantics give the pace WHILE reading, not averaged over
+    -- dead time.
+    local ui = stubUiWithStats({ book_read_pages = 70, id_curr_book = 101 })
+    local cache = { book_distinct_days = 5 }
+    local s = Tokens.buildConditionState(ui, 0, 0, nil, cache)
+    eq(s.pages_per_day, 14)
 end)
 
-test("pages_per_day: zero-day handling — fresh book returns book_pages_read", function()
-    local ui = stubUiWithStats({ book_read_pages = 5, first_open_ts = os.time(), id_curr_book = 102 })
-    local s = Tokens.buildConditionState(ui, 0, 0)
-    eq(s.pages_per_day, 5)
+test("pages_per_day: 0 when no reading days recorded yet", function()
+    local ui = stubUiWithStats({ book_read_pages = 5, id_curr_book = 102 })
+    local cache = { book_distinct_days = 0 }
+    local s = Tokens.buildConditionState(ui, 0, 0, nil, cache)
+    eq(s.pages_per_day, 0)
 end)
 
 test("pages_per_day: 0 when stats absent", function()
@@ -896,9 +896,10 @@ test("pages_per_day: 0 when stats absent", function()
 end)
 
 test("days_reading_book: render path", function()
-    local seven_days_ago = os.time() - (7 * 86400)
-    local ui = stubUiWithStats({ first_open_ts = seven_days_ago, id_curr_book = 103 })
-    local r = Tokens.expand("%days_reading_book", ui, 0, 0, false, 2, nil)
+    local ui = stubUiWithStats({ id_curr_book = 103 })
+    local cache = { book_distinct_days = 7 }
+    local r = Tokens.expand("%days_reading_book", ui, 0, 0, false, 2, nil,
+        nil, { stats_cache = cache })
     eq(r, "7")
 end)
 

@@ -202,42 +202,54 @@ function Tokens._readStatsToday(ui, cache)
     return result
 end
 
--- Cache of book-first-open timestamps keyed by ReaderStatistics' id_curr_book.
--- Populated lazily by _readBookFirstOpen on first access; tests can pre-populate
--- it directly to avoid needing real SQLite during pure-Lua test runs.
-Tokens._first_open_cache = {}
-
--- Return the unix timestamp of the first stats-recorded page view for the
--- current book, or nil if unavailable. Caches per-book so the SQL fires at
--- most once per book per process.
-function Tokens._readBookFirstOpen(ui)
-    if not ui or not ui.statistics or not ui.statistics.id_curr_book then return nil end
-    local id_book = ui.statistics.id_curr_book
-    local cached = Tokens._first_open_cache[id_book]
-    if cached ~= nil then
-        if cached == false then return nil end
-        return cached
+-- Count of distinct local calendar dates the current book has been read on.
+-- Mirrors the SQL KOReader's stats plugin uses inside getCurrentStat and
+-- getBookStat — the divisor behind "Estimated finish date" and "Average time
+-- per day". Cached per paint cycle; the value only changes once per day so
+-- paint-scoped staleness is fine.
+--
+-- Used by %days_reading_book, %pages_per_day, and %book_finish_date so all
+-- three answer "what's your pace when you actually read this book" instead
+-- of "what's your pace averaged over calendar days since first touching the
+-- file" (the latter is meaningless for sporadically-read books).
+function Tokens._readBookDistinctReadingDays(ui, cache)
+    if cache and cache.book_distinct_days ~= nil then
+        if cache.book_distinct_days == false then return nil end
+        return cache.book_distinct_days
     end
-    local ok, ts = pcall(function()
-        local SQ3 = require("lua-ljsqlite3/init")
-        local DataStorage = require("datastorage")
-        local db_location = DataStorage:getSettingsDir() .. "/statistics.sqlite3"
-        local conn = SQ3.open(db_location)
-        local sql = string.format(
-            "SELECT min(start_time) FROM page_stat WHERE id_book = %d;", id_book)
-        local stmt = conn:prepare(sql)
-        local rows, nrows = stmt:reset():resultset("i")
-        stmt:close()
-        conn:close()
-        if not nrows or nrows == 0 then return nil end
-        return tonumber(rows[1][1])
-    end)
-    if not ok or not ts then
-        Tokens._first_open_cache[id_book] = false
+    if not ui or not ui.statistics or not ui.statistics.id_curr_book then
+        if cache then cache.book_distinct_days = false end
         return nil
     end
-    Tokens._first_open_cache[id_book] = ts
-    return ts
+    local id_book = ui.statistics.id_curr_book
+    local ok, days = pcall(function()
+        local SQ3 = require("lua-ljsqlite3/init")
+        local DataStorage = require("datastorage")
+        local conn = SQ3.open(DataStorage:getSettingsDir() .. "/statistics.sqlite3")
+        local sql = string.format([[
+            SELECT count(*) FROM (
+                SELECT strftime('%%Y-%%m-%%d', start_time, 'unixepoch', 'localtime') AS d
+                FROM   page_stat
+                WHERE  id_book = %d
+                GROUP  BY d
+            );
+        ]], id_book)
+        local n = conn:rowexec(sql)
+        conn:close()
+        return tonumber(n) or 0
+    end)
+    if not ok or not days then
+        if cache then cache.book_distinct_days = false end
+        return nil
+    end
+    -- If the user has read at all this session but no row has flushed yet,
+    -- today still counts as a reading day from the user's perspective. Fold
+    -- in the in-memory delta so a brand-new book on day-one shows 1 not 0.
+    if days == 0 and ui.statistics.mem_read_pages and ui.statistics.mem_read_pages > 0 then
+        days = 1
+    end
+    if cache then cache.book_distinct_days = days end
+    return days
 end
 
 -- Per-book stats over a time range. Returns { duration, pages } or nil. duration
@@ -1247,18 +1259,18 @@ function Tokens.buildConditionState(ui, session_elapsed, session_pages_read, pai
         end
     end
 
-    -- Days since first open of this book + derived per-day pace.
+    -- Distinct calendar days the user has actually read this book, and the
+    -- derived per-day pace. Uses the stats plugin's divisor (count(distinct
+    -- date) over page_stat) rather than calendar-days-since-first-open — so
+    -- "5 reading days in the last month" reports 5, not 30, and pages-per-day
+    -- reflects pace WHEN reading rather than averaged over dead time.
     if refs("days_reading_book", "pages_per_day") then
-        local first_open = Tokens._readBookFirstOpen(ui)
-        if first_open and first_open > 0 then
-            state.days_reading_book = math.max(0, math.floor((os.time() - first_open) / 86400))
-        else
-            state.days_reading_book = 0
-        end
+        local days = Tokens._readBookDistinctReadingDays(ui, stats_cache) or 0
+        state.days_reading_book = days
         local read = state.book_pages_read or 0
-        local days = math.max(state.days_reading_book, 1)
-        if read > 0 then
-            state.pages_per_day = math.floor(read / days)
+        local divisor = math.max(days, 1)
+        if read > 0 and days > 0 then
+            state.pages_per_day = math.floor(read / divisor)
         else
             state.pages_per_day = 0
         end
@@ -2102,18 +2114,14 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
     local days_reading_str = ""
     local pages_per_day_str = ""
     if needs("days_reading_book", "pages_per_day") then
-        local first_open = Tokens._readBookFirstOpen(ui)
-        local days = 0
-        if first_open and first_open > 0 then
-            days = math.max(0, math.floor((os.time() - first_open) / 86400))
-        end
+        local days = Tokens._readBookDistinctReadingDays(ui, stats_cache) or 0
         if needs("days_reading_book") and days > 0 then
             days_reading_str = tostring(days)
         end
-        if needs("pages_per_day") then
+        if needs("pages_per_day") and days > 0 then
             local read = (ui.statistics and tonumber(ui.statistics.book_read_pages)) or 0
             if read > 0 then
-                pages_per_day_str = tostring(math.floor(read / math.max(days, 1)))
+                pages_per_day_str = tostring(math.floor(read / days))
             end
         end
     end
