@@ -1711,7 +1711,7 @@ msgstr "Título do capítulo sem número inicial (quando detectado)"
 msgid "Number from chapter title (when detected)"
 msgstr "Número do título do capítulo (quando detectado)"
 
-#: menu/tokens_catalogue.lua:44 menu/tokens_catalogue.lua:131
+#: menu/tokens_catalogue.lua:44 menu/tokens_catalogue.lua:136
 msgid "Current chapter number"
 msgstr "Número do capítulo atual"
 
@@ -1878,320 +1878,339 @@ msgstr "Tempo restante no capítulo"
 #: menu/tokens_catalogue.lua:85
 msgid "Time left in book"
 msgstr "Tempo restante no livro"
-
 #: menu/tokens_catalogue.lua:86
+msgid "Chapter finish time (clock)"
+msgstr "Hora de término do capítulo (relógio)"
+
+#: menu/tokens_catalogue.lua:87
+msgid "Book finish time (clock)"
+msgstr "Hora de término do livro (relógio)"
+
+#: menu/tokens_catalogue.lua:88
+msgid "Chapter finish time (custom format)"
+msgstr "Hora de término do capítulo (formato personalizado)"
+
+#: menu/tokens_catalogue.lua:89
+msgid "Book finish date (projected)"
+msgstr "Data de término do livro (projetada)"
+
+#: menu/tokens_catalogue.lua:90
+msgid "Book finish date (custom format)"
+msgstr "Data de término do livro (formato personalizado)"
+
+#: menu/tokens_catalogue.lua:91
 msgid "Session reading time"
 msgstr "Tempo de leitura da sessão"
 
-#: menu/tokens_catalogue.lua:87
+#: menu/tokens_catalogue.lua:92
 msgid "Session pages read"
 msgstr "Páginas lidas na sessão"
 
-#: menu/tokens_catalogue.lua:88
+#: menu/tokens_catalogue.lua:93
 msgid "Pages read today (all books)"
 msgstr "Páginas lidas hoje (todos os livros)"
 
-#: menu/tokens_catalogue.lua:89
+#: menu/tokens_catalogue.lua:94
 msgid "Reading time today (all books)"
 msgstr "Tempo de leitura hoje (todos os livros)"
 
-#: menu/tokens_catalogue.lua:90
+#: menu/tokens_catalogue.lua:95
 msgid "Pages read today (current book)"
 msgstr "Páginas lidas hoje (livro atual)"
 
-#: menu/tokens_catalogue.lua:91
+#: menu/tokens_catalogue.lua:96
 msgid "Reading time today (current book)"
 msgstr "Tempo de leitura hoje (livro atual)"
 
-#: menu/tokens_catalogue.lua:92
+#: menu/tokens_catalogue.lua:97
 msgid "Pages read in last 7 days (current book)"
 msgstr "Páginas lidas nos últimos 7 dias (livro atual)"
 
-#: menu/tokens_catalogue.lua:93
+#: menu/tokens_catalogue.lua:98
 msgid "Reading time in last 7 days (current book)"
 msgstr "Tempo de leitura nos últimos 7 dias (livro atual)"
 
-#: menu/tokens_catalogue.lua:94 menu/tokens_catalogue.lua:138
+#: menu/tokens_catalogue.lua:99 menu/tokens_catalogue.lua:143
 msgid "Day streak (any book)"
 msgstr "Sequência de dias (qualquer livro)"
 
-#: menu/tokens_catalogue.lua:95 menu/tokens_catalogue.lua:139
+#: menu/tokens_catalogue.lua:100 menu/tokens_catalogue.lua:144
 msgid "Day streak (current book)"
 msgstr "Sequência de dias (livro atual)"
 
-#: menu/tokens_catalogue.lua:96
+#: menu/tokens_catalogue.lua:101
 msgid "Lifetime reading time (all books)"
 msgstr "Tempo total de leitura (todos os livros)"
 
-#: menu/tokens_catalogue.lua:97
+#: menu/tokens_catalogue.lua:102
 msgid "Books finished (lifetime)"
 msgstr "Livros concluídos (total)"
 
-#: menu/tokens_catalogue.lua:98
+#: menu/tokens_catalogue.lua:103
 msgid "Reading speed (pages/hour)"
 msgstr "Velocidade de leitura (pgs/hora)"
 
-#: menu/tokens_catalogue.lua:99
+#: menu/tokens_catalogue.lua:104
 msgid "Average time per page"
 msgstr "Tempo médio por página"
 
-#: menu/tokens_catalogue.lua:100
+#: menu/tokens_catalogue.lua:105
 msgid "Total reading time for book"
 msgstr "Tempo total de leitura do livro"
 
-#: menu/tokens_catalogue.lua:101
+#: menu/tokens_catalogue.lua:106
 msgid "Pages read of this book (lifetime)"
 msgstr "Páginas lidas deste livro (total)"
 
-#: menu/tokens_catalogue.lua:102
+#: menu/tokens_catalogue.lua:107
 msgid "Book read percentage (skip-aware)"
 msgstr "Porcentagem lida do livro (sem páginas puladas)"
 
-#: menu/tokens_catalogue.lua:103
+#: menu/tokens_catalogue.lua:108
 msgid "Days reading this book"
 msgstr "Dias lendo este livro"
 
-#: menu/tokens_catalogue.lua:104
+#: menu/tokens_catalogue.lua:109
 msgid "Pages per day for this book"
 msgstr "Páginas por dia neste livro"
 
-#: menu/tokens_catalogue.lua:105
+#: menu/tokens_catalogue.lua:110
 msgid "Battery level"
 msgstr "Nível de bateria"
 
-#: menu/tokens_catalogue.lua:106
+#: menu/tokens_catalogue.lua:111
 msgid "Plugin content"
 msgstr "Conteúdo do plugin"
 
-#: menu/tokens_catalogue.lua:107
+#: menu/tokens_catalogue.lua:112
 msgid "Frontlight brightness"
 msgstr "Brilho da luz frontal"
 
-#: menu/tokens_catalogue.lua:108 menu/tokens_catalogue.lua:144
+#: menu/tokens_catalogue.lua:113 menu/tokens_catalogue.lua:149
 msgid "Frontlight brightness %"
 msgstr "Brilho da luz frontal %"
 
-#: menu/tokens_catalogue.lua:109
+#: menu/tokens_catalogue.lua:114
 msgid "Frontlight warmth"
 msgstr "Temperatura da luz frontal"
 
-#: menu/tokens_catalogue.lua:110 menu/tokens_catalogue.lua:145
+#: menu/tokens_catalogue.lua:115 menu/tokens_catalogue.lua:150
 msgid "Frontlight warmth %"
 msgstr "Temperatura da luz frontal %"
 
-#: menu/tokens_catalogue.lua:111
+#: menu/tokens_catalogue.lua:116
 msgid "RAM used %"
 msgstr "RAM usada %"
 
-#: menu/tokens_catalogue.lua:112
+#: menu/tokens_catalogue.lua:117
 msgid "RAM used (MiB)"
 msgstr "RAM usada (MiB)"
 
-#: menu/tokens_catalogue.lua:113
+#: menu/tokens_catalogue.lua:118
 msgid "Free disk space"
 msgstr "Espaço livre em disco"
 
-#: menu/tokens_catalogue.lua:114
+#: menu/tokens_catalogue.lua:119
 msgid "Page X of Y, em-dash framed"
 msgstr "Página X de Y, entre travessões"
 
-#: menu/tokens_catalogue.lua:115
+#: menu/tokens_catalogue.lua:120
 msgid "Title ⋮ author (italic)"
 msgstr "Título ⋮ autor (itálico)"
 
-#: menu/tokens_catalogue.lua:116
+#: menu/tokens_catalogue.lua:121
 msgid "Bookmark(s) count + label"
 msgstr "Contagem de marcador(es) + rótulo"
 
-#: menu/tokens_catalogue.lua:117
+#: menu/tokens_catalogue.lua:122
 msgid "Highlight(s) count + label"
 msgstr "Contagem de destaque(s) + rótulo"
 
-#: menu/tokens_catalogue.lua:118
+#: menu/tokens_catalogue.lua:123
 msgid "Hourglass session timer + pages"
 msgstr "Ampulheta com tempo de sessão + páginas"
 
-#: menu/tokens_catalogue.lua:119
+#: menu/tokens_catalogue.lua:124
 msgid "Sparkles 1"
 msgstr "Brilhos 1"
 
-#: menu/tokens_catalogue.lua:120
+#: menu/tokens_catalogue.lua:125
 msgid "Sparkles 2"
 msgstr "Brilhos 2"
 
-#: menu/tokens_catalogue.lua:124
+#: menu/tokens_catalogue.lua:129
 msgid "If Wi-Fi is on"
 msgstr "Se Wi-Fi estiver ligado"
 
-#: menu/tokens_catalogue.lua:125
+#: menu/tokens_catalogue.lua:130
 msgid "If connected"
 msgstr "Se estiver conectado"
 
-#: menu/tokens_catalogue.lua:126
+#: menu/tokens_catalogue.lua:131
 msgid "Battery 0–100"
 msgstr "Bateria 0–100"
 
-#: menu/tokens_catalogue.lua:127
+#: menu/tokens_catalogue.lua:132
 msgid "If charging"
 msgstr "Se estiver carregando"
 
-#: menu/tokens_catalogue.lua:128
+#: menu/tokens_catalogue.lua:133
 msgid "If page-turn flipped"
 msgstr "Se a virada de página estiver invertida"
 
-#: menu/tokens_catalogue.lua:129
+#: menu/tokens_catalogue.lua:134
 msgid "Book progress 0–100"
 msgstr "Progresso do livro 0–100"
 
-#: menu/tokens_catalogue.lua:130
+#: menu/tokens_catalogue.lua:135
 msgid "Chapter progress 0–100"
 msgstr "Progresso do capítulo 0–100"
 
-#: menu/tokens_catalogue.lua:132
+#: menu/tokens_catalogue.lua:137
 msgid "Total chapters"
 msgstr "Total de capítulos"
 
-#: menu/tokens_catalogue.lua:133
+#: menu/tokens_catalogue.lua:138
 msgid "Pages per hour"
 msgstr "Páginas por hora"
 
-#: menu/tokens_catalogue.lua:134
+#: menu/tokens_catalogue.lua:139
 msgid "Minutes this session"
 msgstr "Minutos nesta sessão"
 
-#: menu/tokens_catalogue.lua:135
+#: menu/tokens_catalogue.lua:140
 msgid "Pages this session"
 msgstr "Páginas nesta sessão"
 
-#: menu/tokens_catalogue.lua:136
+#: menu/tokens_catalogue.lua:141
 msgid "Pages read today"
 msgstr "Páginas lidas hoje"
 
-#: menu/tokens_catalogue.lua:137
+#: menu/tokens_catalogue.lua:142
 msgid "Pages today (current book)"
 msgstr "Páginas hoje (livro atual)"
 
-#: menu/tokens_catalogue.lua:140
+#: menu/tokens_catalogue.lua:145
 msgid "Books finished"
 msgstr "Livros concluídos"
 
-#: menu/tokens_catalogue.lua:141
+#: menu/tokens_catalogue.lua:146
 msgid "Book read % (skip-aware)"
 msgstr "% do livro lida (sem páginas puladas)"
 
-#: menu/tokens_catalogue.lua:142
+#: menu/tokens_catalogue.lua:147
 msgid "odd / even"
 msgstr "ímpar / par"
 
-#: menu/tokens_catalogue.lua:143
+#: menu/tokens_catalogue.lua:148
 msgid "If frontlight on"
 msgstr "Se a luz frontal estiver ligada"
 
-#: menu/tokens_catalogue.lua:146
+#: menu/tokens_catalogue.lua:151
 msgid "If night mode on"
 msgstr "Se o modo noturno estiver ligado"
 
-#: menu/tokens_catalogue.lua:147
+#: menu/tokens_catalogue.lua:152
 msgid "EPUB / PDF / CBZ / …"
 msgstr "EPUB / PDF / CBZ / …"
 
-#: menu/tokens_catalogue.lua:148
+#: menu/tokens_catalogue.lua:153
 msgid "Current HH:MM (24h)"
 msgstr "HH:MM atual (24h)"
 
-#: menu/tokens_catalogue.lua:149
+#: menu/tokens_catalogue.lua:154
 msgid "Mon–Sun"
 msgstr "Seg–Dom"
 
-#: menu/tokens_catalogue.lua:150
+#: menu/tokens_catalogue.lua:155
 msgid "If book has title"
 msgstr "Se o livro tem título"
 
-#: menu/tokens_catalogue.lua:151
+#: menu/tokens_catalogue.lua:156
 msgid "If book has author"
 msgstr "Se o livro tem autor"
 
-#: menu/tokens_catalogue.lua:152
+#: menu/tokens_catalogue.lua:157
 msgid "If book in series"
 msgstr "Se o livro faz parte de uma série"
 
-#: menu/tokens_catalogue.lua:153
+#: menu/tokens_catalogue.lua:158
 msgid "If chapter has title"
 msgstr "Se o capítulo tem título"
 
-#: menu/tokens_catalogue.lua:154
+#: menu/tokens_catalogue.lua:159
 msgid "Chapter title at depth 1/2/3"
 msgstr "Título do capítulo no nível 1/2/3"
 
-#: menu/tokens_catalogue.lua:155
+#: menu/tokens_catalogue.lua:160
 msgid "If book has 2+ authors"
 msgstr "Se o livro tem 2+ autores"
 
-#: menu/tokens_catalogue.lua:156
+#: menu/tokens_catalogue.lua:161
 msgid "Author with et al. for multi-author"
 msgstr "Autor com et al. para vários autores"
 
-#: menu/tokens_catalogue.lua:157
+#: menu/tokens_catalogue.lua:162
 msgid "Wi-Fi icon only when Wi-Fi enabled"
 msgstr "Ícone Wi-Fi só quando Wi-Fi ativado"
 
-#: menu/tokens_catalogue.lua:158
+#: menu/tokens_catalogue.lua:163
 msgid "Low-battery warning"
 msgstr "Aviso de bateria fraca"
 
-#: menu/tokens_catalogue.lua:159
+#: menu/tokens_catalogue.lua:164
 msgid "Bolt when charging"
 msgstr "Raio ao carregar"
 
-#: menu/tokens_catalogue.lua:160
+#: menu/tokens_catalogue.lua:165
 msgid "Arrow when page-turn flipped"
 msgstr "Seta quando a virada de página está invertida"
 
-#: menu/tokens_catalogue.lua:161
+#: menu/tokens_catalogue.lua:166
 msgid "Odd/even variations"
 msgstr "Variações ímpar/par"
 
-#: menu/tokens_catalogue.lua:162
+#: menu/tokens_catalogue.lua:167
 msgid "Near end of book"
 msgstr "Perto do fim do livro"
 
-#: menu/tokens_catalogue.lua:163
+#: menu/tokens_catalogue.lua:168
 msgid "Frontlight on/off label"
 msgstr "Rótulo luz frontal ligada/desligada"
 
-#: menu/tokens_catalogue.lua:164
+#: menu/tokens_catalogue.lua:169
 msgid "If format"
 msgstr "Se for o formato"
 
-#: menu/tokens_catalogue.lua:165
+#: menu/tokens_catalogue.lua:170
 msgid "Weekends"
 msgstr "Fins de semana"
 
-#: menu/tokens_catalogue.lua:166
+#: menu/tokens_catalogue.lua:171
 msgid "Time window"
 msgstr "Janela de tempo"
 
-#: menu/tokens_catalogue.lua:167
+#: menu/tokens_catalogue.lua:172
 msgid "Non-series books"
 msgstr "Livros sem série"
 
-#: menu/tokens_catalogue.lua:168
+#: menu/tokens_catalogue.lua:173
 msgid "Fall back to shallower chapter"
 msgstr "Recorrer ao capítulo mais raso"
 
-#: menu/tokens_catalogue.lua:169
+#: menu/tokens_catalogue.lua:174
 msgid "Chapter number then title"
 msgstr "Número do capítulo seguido do título"
 
-#: menu/tokens_catalogue.lua:170
+#: menu/tokens_catalogue.lua:175
 msgid "Long books (20+ chapters)"
 msgstr "Livros longos (20+ capítulos)"
 
-#: menu/tokens_catalogue.lua:171
+#: menu/tokens_catalogue.lua:176
 msgid "Chapter title only when different from book title"
 msgstr "Título do capítulo apenas quando diferente do título do livro"
 
-#: menu/tokens_catalogue.lua:172
+#: menu/tokens_catalogue.lua:177
 msgid "Battery bars"
 msgstr "Barras de bateria"
 

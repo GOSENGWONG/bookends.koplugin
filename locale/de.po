@@ -1713,7 +1713,7 @@ msgstr "Kapiteltitel ohne führende Zahl (wenn erkannt)"
 msgid "Number from chapter title (when detected)"
 msgstr "Zahl aus Kapiteltitel (wenn erkannt)"
 
-#: menu/tokens_catalogue.lua:44 menu/tokens_catalogue.lua:131
+#: menu/tokens_catalogue.lua:44 menu/tokens_catalogue.lua:136
 msgid "Current chapter number"
 msgstr "Aktuelle Kapitelnummer"
 
@@ -1880,320 +1880,339 @@ msgstr "Verbleibende Zeit im Kapitel"
 #: menu/tokens_catalogue.lua:85
 msgid "Time left in book"
 msgstr "Verbleibende Zeit im Buch"
-
 #: menu/tokens_catalogue.lua:86
+msgid "Chapter finish time (clock)"
+msgstr "Kapitel-Endzeit (Uhrzeit)"
+
+#: menu/tokens_catalogue.lua:87
+msgid "Book finish time (clock)"
+msgstr "Buch-Endzeit (Uhrzeit)"
+
+#: menu/tokens_catalogue.lua:88
+msgid "Chapter finish time (custom format)"
+msgstr "Kapitel-Endzeit (benutzerdef. Format)"
+
+#: menu/tokens_catalogue.lua:89
+msgid "Book finish date (projected)"
+msgstr "Buch-Enddatum (voraussichtlich)"
+
+#: menu/tokens_catalogue.lua:90
+msgid "Book finish date (custom format)"
+msgstr "Buch-Enddatum (benutzerdef. Format)"
+
+#: menu/tokens_catalogue.lua:91
 msgid "Session reading time"
 msgstr "Sitzung Lesezeit"
 
-#: menu/tokens_catalogue.lua:87
+#: menu/tokens_catalogue.lua:92
 msgid "Session pages read"
 msgstr "Sitzung gelesene Seiten"
 
-#: menu/tokens_catalogue.lua:88
+#: menu/tokens_catalogue.lua:93
 msgid "Pages read today (all books)"
 msgstr "Heute gelesene Seiten (alle Bücher)"
 
-#: menu/tokens_catalogue.lua:89
+#: menu/tokens_catalogue.lua:94
 msgid "Reading time today (all books)"
 msgstr "Heutige Lesezeit (alle Bücher)"
 
-#: menu/tokens_catalogue.lua:90
+#: menu/tokens_catalogue.lua:95
 msgid "Pages read today (current book)"
 msgstr "Heute gelesene Seiten (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:91
+#: menu/tokens_catalogue.lua:96
 msgid "Reading time today (current book)"
 msgstr "Heutige Lesezeit (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:92
+#: menu/tokens_catalogue.lua:97
 msgid "Pages read in last 7 days (current book)"
 msgstr "Gelesene Seiten in den letzten 7 Tagen (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:93
+#: menu/tokens_catalogue.lua:98
 msgid "Reading time in last 7 days (current book)"
 msgstr "Lesezeit in den letzten 7 Tagen (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:94 menu/tokens_catalogue.lua:138
+#: menu/tokens_catalogue.lua:99 menu/tokens_catalogue.lua:143
 msgid "Day streak (any book)"
 msgstr "Tage-Serie (alle Bücher)"
 
-#: menu/tokens_catalogue.lua:95 menu/tokens_catalogue.lua:139
+#: menu/tokens_catalogue.lua:100 menu/tokens_catalogue.lua:144
 msgid "Day streak (current book)"
 msgstr "Tage-Serie (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:96
+#: menu/tokens_catalogue.lua:101
 msgid "Lifetime reading time (all books)"
 msgstr "Gesamte Lesezeit (alle Bücher)"
 
-#: menu/tokens_catalogue.lua:97
+#: menu/tokens_catalogue.lua:102
 msgid "Books finished (lifetime)"
 msgstr "Beendete Bücher (gesamt)"
 
-#: menu/tokens_catalogue.lua:98
+#: menu/tokens_catalogue.lua:103
 msgid "Reading speed (pages/hour)"
 msgstr "Lesegeschwindigkeit (Seiten/Stunde)"
 
-#: menu/tokens_catalogue.lua:99
+#: menu/tokens_catalogue.lua:104
 msgid "Average time per page"
 msgstr "Durchschnittliche Zeit pro Seite"
 
-#: menu/tokens_catalogue.lua:100
+#: menu/tokens_catalogue.lua:105
 msgid "Total reading time for book"
 msgstr "Gesamte Lesezeit für Buch"
 
-#: menu/tokens_catalogue.lua:101
+#: menu/tokens_catalogue.lua:106
 msgid "Pages read of this book (lifetime)"
 msgstr "Gelesene Seiten dieses Buches (gesamt)"
 
-#: menu/tokens_catalogue.lua:102
+#: menu/tokens_catalogue.lua:107
 msgid "Book read percentage (skip-aware)"
 msgstr "Buch gelesen in % (ohne übersprungene)"
 
-#: menu/tokens_catalogue.lua:103
+#: menu/tokens_catalogue.lua:108
 msgid "Days reading this book"
 msgstr "Tage mit diesem Buch"
 
-#: menu/tokens_catalogue.lua:104
+#: menu/tokens_catalogue.lua:109
 msgid "Pages per day for this book"
 msgstr "Seiten pro Tag für dieses Buch"
 
-#: menu/tokens_catalogue.lua:105
+#: menu/tokens_catalogue.lua:110
 msgid "Battery level"
 msgstr "Ladestand"
 
-#: menu/tokens_catalogue.lua:106
+#: menu/tokens_catalogue.lua:111
 msgid "Plugin content"
 msgstr "Plugin-Inhalt"
 
-#: menu/tokens_catalogue.lua:107
+#: menu/tokens_catalogue.lua:112
 msgid "Frontlight brightness"
 msgstr "Frontlicht-Helligkeit"
 
-#: menu/tokens_catalogue.lua:108 menu/tokens_catalogue.lua:144
+#: menu/tokens_catalogue.lua:113 menu/tokens_catalogue.lua:149
 msgid "Frontlight brightness %"
 msgstr "Frontlicht-Helligkeit %"
 
-#: menu/tokens_catalogue.lua:109
+#: menu/tokens_catalogue.lua:114
 msgid "Frontlight warmth"
 msgstr "Frontlicht-Wärme"
 
-#: menu/tokens_catalogue.lua:110 menu/tokens_catalogue.lua:145
+#: menu/tokens_catalogue.lua:115 menu/tokens_catalogue.lua:150
 msgid "Frontlight warmth %"
 msgstr "Frontlicht-Wärme %"
 
-#: menu/tokens_catalogue.lua:111
+#: menu/tokens_catalogue.lua:116
 msgid "RAM used %"
 msgstr "RAM belegt %"
 
-#: menu/tokens_catalogue.lua:112
+#: menu/tokens_catalogue.lua:117
 msgid "RAM used (MiB)"
 msgstr "RAM-Nutzung (MiB)"
 
-#: menu/tokens_catalogue.lua:113
+#: menu/tokens_catalogue.lua:118
 msgid "Free disk space"
 msgstr "Freier Speicherplatz"
 
-#: menu/tokens_catalogue.lua:114
+#: menu/tokens_catalogue.lua:119
 msgid "Page X of Y, em-dash framed"
 msgstr "Seite X von Y, mit Gedankenstrichen umrahmt"
 
-#: menu/tokens_catalogue.lua:115
+#: menu/tokens_catalogue.lua:120
 msgid "Title ⋮ author (italic)"
 msgstr "Titel ⋮ Autor (kursiv)"
 
-#: menu/tokens_catalogue.lua:116
+#: menu/tokens_catalogue.lua:121
 msgid "Bookmark(s) count + label"
 msgstr "Anzahl Lesezeichen + Beschriftung"
 
-#: menu/tokens_catalogue.lua:117
+#: menu/tokens_catalogue.lua:122
 msgid "Highlight(s) count + label"
 msgstr "Anzahl Markierungen + Beschriftung"
 
-#: menu/tokens_catalogue.lua:118
+#: menu/tokens_catalogue.lua:123
 msgid "Hourglass session timer + pages"
 msgstr "Sanduhr Sitzungszeit + Seiten"
 
-#: menu/tokens_catalogue.lua:119
+#: menu/tokens_catalogue.lua:124
 msgid "Sparkles 1"
 msgstr "Funkeln 1"
 
-#: menu/tokens_catalogue.lua:120
+#: menu/tokens_catalogue.lua:125
 msgid "Sparkles 2"
 msgstr "Funkeln 2"
 
-#: menu/tokens_catalogue.lua:124
+#: menu/tokens_catalogue.lua:129
 msgid "If Wi-Fi is on"
 msgstr "Wenn WLAN aktiviert ist"
 
-#: menu/tokens_catalogue.lua:125
+#: menu/tokens_catalogue.lua:130
 msgid "If connected"
 msgstr "Wenn verbunden"
 
-#: menu/tokens_catalogue.lua:126
+#: menu/tokens_catalogue.lua:131
 msgid "Battery 0–100"
 msgstr "Akku 0–100"
 
-#: menu/tokens_catalogue.lua:127
+#: menu/tokens_catalogue.lua:132
 msgid "If charging"
 msgstr "Wenn es lädt"
 
-#: menu/tokens_catalogue.lua:128
+#: menu/tokens_catalogue.lua:133
 msgid "If page-turn flipped"
 msgstr "Wenn Blätterrichtung umgekehrt ist"
 
-#: menu/tokens_catalogue.lua:129
+#: menu/tokens_catalogue.lua:134
 msgid "Book progress 0–100"
 msgstr "Buchfortschritt 0–100"
 
-#: menu/tokens_catalogue.lua:130
+#: menu/tokens_catalogue.lua:135
 msgid "Chapter progress 0–100"
 msgstr "Kapitelfortschritt 0–100"
 
-#: menu/tokens_catalogue.lua:132
+#: menu/tokens_catalogue.lua:137
 msgid "Total chapters"
 msgstr "Kapitel gesamt"
 
-#: menu/tokens_catalogue.lua:133
+#: menu/tokens_catalogue.lua:138
 msgid "Pages per hour"
 msgstr "Seiten pro Stunde"
 
-#: menu/tokens_catalogue.lua:134
+#: menu/tokens_catalogue.lua:139
 msgid "Minutes this session"
 msgstr "Minuten in dieser Sitzung"
 
-#: menu/tokens_catalogue.lua:135
+#: menu/tokens_catalogue.lua:140
 msgid "Pages this session"
 msgstr "Seiten in dieser Sitzung"
 
-#: menu/tokens_catalogue.lua:136
+#: menu/tokens_catalogue.lua:141
 msgid "Pages read today"
 msgstr "Heute gelesene Seiten"
 
-#: menu/tokens_catalogue.lua:137
+#: menu/tokens_catalogue.lua:142
 msgid "Pages today (current book)"
 msgstr "Seiten heute (aktuelles Buch)"
 
-#: menu/tokens_catalogue.lua:140
+#: menu/tokens_catalogue.lua:145
 msgid "Books finished"
 msgstr "Beendete Bücher"
 
-#: menu/tokens_catalogue.lua:141
+#: menu/tokens_catalogue.lua:146
 msgid "Book read % (skip-aware)"
 msgstr "Buch gelesen % (ohne übersprungene)"
 
-#: menu/tokens_catalogue.lua:142
+#: menu/tokens_catalogue.lua:147
 msgid "odd / even"
 msgstr "ungerade / gerade"
 
-#: menu/tokens_catalogue.lua:143
+#: menu/tokens_catalogue.lua:148
 msgid "If frontlight on"
 msgstr "Wenn Frontlicht an ist"
 
-#: menu/tokens_catalogue.lua:146
+#: menu/tokens_catalogue.lua:151
 msgid "If night mode on"
 msgstr "Wenn Nachtmodus aktiv ist"
 
-#: menu/tokens_catalogue.lua:147
+#: menu/tokens_catalogue.lua:152
 msgid "EPUB / PDF / CBZ / …"
 msgstr "EPUB / PDF / CBZ / …"
 
-#: menu/tokens_catalogue.lua:148
+#: menu/tokens_catalogue.lua:153
 msgid "Current HH:MM (24h)"
 msgstr "Aktuell HH:MM (24h)"
 
-#: menu/tokens_catalogue.lua:149
+#: menu/tokens_catalogue.lua:154
 msgid "Mon–Sun"
 msgstr "Mo–So"
 
-#: menu/tokens_catalogue.lua:150
+#: menu/tokens_catalogue.lua:155
 msgid "If book has title"
 msgstr "Wenn das Buch einen Titel hat"
 
-#: menu/tokens_catalogue.lua:151
+#: menu/tokens_catalogue.lua:156
 msgid "If book has author"
 msgstr "Wenn das Buch einen Autor hat"
 
-#: menu/tokens_catalogue.lua:152
+#: menu/tokens_catalogue.lua:157
 msgid "If book in series"
 msgstr "Wenn das Buch zu einer Reihe gehört"
 
-#: menu/tokens_catalogue.lua:153
+#: menu/tokens_catalogue.lua:158
 msgid "If chapter has title"
 msgstr "Wenn das Kapitel einen Titel hat"
 
-#: menu/tokens_catalogue.lua:154
+#: menu/tokens_catalogue.lua:159
 msgid "Chapter title at depth 1/2/3"
 msgstr "Kapiteltitel Ebene 1/2/3"
 
-#: menu/tokens_catalogue.lua:155
+#: menu/tokens_catalogue.lua:160
 msgid "If book has 2+ authors"
 msgstr "Wenn das Buch 2+ Autoren hat"
 
-#: menu/tokens_catalogue.lua:156
+#: menu/tokens_catalogue.lua:161
 msgid "Author with et al. for multi-author"
 msgstr "Autor mit et al. bei mehreren Autoren"
 
-#: menu/tokens_catalogue.lua:157
+#: menu/tokens_catalogue.lua:162
 msgid "Wi-Fi icon only when Wi-Fi enabled"
 msgstr "WLAN-Symbol nur bei aktivem WLAN"
 
-#: menu/tokens_catalogue.lua:158
+#: menu/tokens_catalogue.lua:163
 msgid "Low-battery warning"
 msgstr "Warnung bei niedrigem Akku"
 
-#: menu/tokens_catalogue.lua:159
+#: menu/tokens_catalogue.lua:164
 msgid "Bolt when charging"
 msgstr "Blitzsymbol beim Laden"
 
-#: menu/tokens_catalogue.lua:160
+#: menu/tokens_catalogue.lua:165
 msgid "Arrow when page-turn flipped"
 msgstr "Pfeil bei umgekehrter Blätterrichtung"
 
-#: menu/tokens_catalogue.lua:161
+#: menu/tokens_catalogue.lua:166
 msgid "Odd/even variations"
 msgstr "Ungerade/gerade Varianten"
 
-#: menu/tokens_catalogue.lua:162
+#: menu/tokens_catalogue.lua:167
 msgid "Near end of book"
 msgstr "Kurz vor Buchende"
 
-#: menu/tokens_catalogue.lua:163
+#: menu/tokens_catalogue.lua:168
 msgid "Frontlight on/off label"
 msgstr "Frontlicht Ein/Aus-Beschriftung"
 
-#: menu/tokens_catalogue.lua:164
+#: menu/tokens_catalogue.lua:169
 msgid "If format"
 msgstr "Wenn Format"
 
-#: menu/tokens_catalogue.lua:165
+#: menu/tokens_catalogue.lua:170
 msgid "Weekends"
 msgstr "Wochenenden"
 
-#: menu/tokens_catalogue.lua:166
+#: menu/tokens_catalogue.lua:171
 msgid "Time window"
 msgstr "Zeitfenster"
 
-#: menu/tokens_catalogue.lua:167
+#: menu/tokens_catalogue.lua:172
 msgid "Non-series books"
 msgstr "Einzelbände"
 
-#: menu/tokens_catalogue.lua:168
+#: menu/tokens_catalogue.lua:173
 msgid "Fall back to shallower chapter"
 msgstr "Auf übergeordnetes Kapitel zurückgreifen"
 
-#: menu/tokens_catalogue.lua:169
+#: menu/tokens_catalogue.lua:174
 msgid "Chapter number then title"
 msgstr "Kapitelnummer dann Titel"
 
-#: menu/tokens_catalogue.lua:170
+#: menu/tokens_catalogue.lua:175
 msgid "Long books (20+ chapters)"
 msgstr "Lange Bücher (20+ Kapitel)"
 
-#: menu/tokens_catalogue.lua:171
+#: menu/tokens_catalogue.lua:176
 msgid "Chapter title only when different from book title"
 msgstr "Kapiteltitel nur, wenn er vom Buchtitel abweicht"
 
-#: menu/tokens_catalogue.lua:172
+#: menu/tokens_catalogue.lua:177
 msgid "Battery bars"
 msgstr "Akku-Balken"
 

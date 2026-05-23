@@ -128,7 +128,7 @@ Tokens are placeholders that expand to live values. Type `%` followed by a name,
 | `%weekday_short` | Weekday short | *Fri* |
 | `%datetime{spec}` | Custom date/time via strftime spec | `%datetime{%d %B}` → *23 April* |
 
-> Custom date and time formats use `%datetime{spec}`, which accepts any [strftime spec](https://strftime.net/). Example: `%datetime{%d %B}` → "23 April". For the common cases, use the fixed tokens like `%date` and `%time`.
+> Custom date and time formats use `%datetime{spec}`, which accepts any [strftime spec](https://strftime.net/). Example: `%datetime{%d %B}` → "23 April". For the common cases, use the fixed tokens like `%date` and `%time`. The same brace syntax also works on `%chap_time_left_eta`, `%book_time_left_eta`, and `%book_finish_date`.
 
 #### Reading
 
@@ -136,6 +136,9 @@ Tokens are placeholders that expand to live values. Type `%` followed by a name,
 |-------|-------------|---------|
 | `%chap_time_left` | Time left in chapter | *0h 12m* |
 | `%book_time_left` | Time left in book | *3h 45m* |
+| `%chap_time_left_eta` | Clock time you'd reach end of chapter | *14:47* |
+| `%book_time_left_eta` | Clock time you'd reach end of book | *18:20* |
+| `%book_finish_date` | Projected calendar date you'll finish the book | *9 Jun* |
 | `%book_read_time` | Total reading time for book | *2h 30m* |
 | `%session_time` | Session reading time (skip-aware) | *0h 23m* |
 | `%session_pages` | Session pages read (skip-aware) | *14* |
@@ -145,8 +148,8 @@ Tokens are placeholders that expand to live values. Type `%` followed by a name,
 | `%avg_page_time` | Average time per page | *1m 12s* |
 | `%book_pages_read` | Pages read of this book (lifetime) | *87* |
 | `%book_pct_read` | Book read percentage (skip-aware) | *44* |
-| `%days_reading_book` | Days since first opening this book | *7* |
-| `%pages_per_day` | Pages read per day for this book | *12* |
+| `%days_reading_book` | Distinct days you've read this book | *5* |
+| `%pages_per_day` | Pages per reading day for this book | *14* |
 
 #### Device
 
@@ -234,8 +237,8 @@ Comparison operators: `=` (equals), `!=` (not equals), `<` (less than), `>` (gre
 | `avg_page_time` | seconds | Average time per page |
 | `book_pages_read` | count | Lifetime skip-aware pages read of this book |
 | `book_pct_read` | 0–100 | Book read percentage, skip-aware (complements position-based `book_pct`) |
-| `days_reading_book` | count | Days since first opening this book |
-| `pages_per_day` | count | Pages per day for this book |
+| `days_reading_book` | count | Distinct days you've read this book |
+| `pages_per_day` | count | Pages per reading day for this book |
 | `page` | odd / even | Current page parity |
 | `light` | on / off | Frontlight state |
 | `warmth` | 0–100 | Frontlight warmth (only on devices with natural light) |
