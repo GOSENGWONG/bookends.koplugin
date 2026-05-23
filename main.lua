@@ -1988,6 +1988,7 @@ local TIMER_TOKENS = {
     "time", "time_12h", "time_24h",
     "date", "date_long", "date_numeric", "weekday", "weekday_short",
     "session_time", "book_time_left", "chap_time_left",
+    "book_time_left_eta", "chap_time_left_eta",
     "speed", "book_read_time",
     "batt", "batt_icon",
 }

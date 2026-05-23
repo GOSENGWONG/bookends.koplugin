@@ -449,6 +449,28 @@ local function getDateLocale()
     return false
 end
 
+-- Format an ETA epoch for the %*_time_left_eta tokens. When brace_fmt is nil,
+-- defaults to KOReader's clock format (datetime.secondsToHour honours the
+-- twelve_hour_clock setting and any %_I-style strftime variants the platform
+-- needs). When brace_fmt is set, it is passed through os.date with the device
+-- locale applied — same locale handling as %datetime.
+local function formatEtaEpoch(epoch, brace_fmt)
+    if not epoch then return "" end
+    if brace_fmt and brace_fmt ~= "" then
+        local loc = getDateLocale()
+        local saved
+        if loc then
+            saved = os.setlocale(nil, "time")
+            os.setlocale(loc, "time")
+        end
+        local out = os.date(brace_fmt, epoch) or ""
+        if saved then os.setlocale(saved, "time") end
+        return tostring(out)
+    end
+    local twelve = G_reader_settings and G_reader_settings:isTrue("twelve_hour_clock") or false
+    return datetime.secondsToHour(epoch, twelve)
+end
+
 --- Compute chapter tick fractions as {fraction, width, depth} triples.
 function Tokens.computeTickFractions(doc, toc, tick_width_multiplier, current_pageno)
     if not doc or not toc then return {} end
@@ -1424,6 +1446,9 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
     -- handler below; consumed during percent computation to format with
     -- string.format("%.Nf", raw_pct) instead of math.floor(pct + 0.5).
     local pct_decimals = {}
+    -- strftime format brace for %chap_time_left_eta{...} / %book_time_left_eta{...}.
+    -- Keyed by token name; consumed when building the substitution table.
+    local eta_formats = {}
 
     format_str = format_str:gsub("%%([%a_][%w_]*)(%b{})", function(name, brace)
         local content = brace:sub(2, -2)  -- strip { and }
@@ -1457,6 +1482,13 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             local formatted = os.date(content) or ""
             if saved_locale then os.setlocale(saved_locale, "time") end
             return formatted
+        end
+        -- %chap_time_left_eta{<strftime>} / %book_time_left_eta{<strftime>}.
+        -- Stash format and rewrite to the bareword form so the substitution
+        -- pass (which has access to the computed ETA epochs) renders it.
+        if name == "chap_time_left_eta" or name == "book_time_left_eta" then
+            eta_formats[name] = content
+            return "%" .. name
         end
         -- %book_pct{N} / %book_pct_left{N}: decimal places (0–4).
         if name == "book_pct" or name == "book_pct_left" then
@@ -1495,6 +1527,7 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             chap_pages_left = "[ch.left]", pages_left = "[left]",
             chap_num = "[ch.num]", chap_count = "[ch.count]",
             chap_time_left = "[ch.time]", book_time_left = "[time]",
+            chap_time_left_eta = "[ch.eta]", book_time_left_eta = "[eta]",
             time_12h = "[12h]", time_24h = "[24h]", time = "[24h]",
             date = "[date]", date_long = "[date.long]",
             date_numeric = "[dd/mm/yy]",
@@ -1541,6 +1574,15 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             local formatted = os.date(content) or ""
             if saved_locale then os.setlocale(saved_locale, "time") end
             return formatted
+        end)
+        -- Live-preview braced ETA tokens with dummy offsets so the user can
+        -- see their strftime format render in the line editor. Chapter uses
+        -- +30 minutes, book uses +2 hours so the two times differ visibly.
+        r = r:gsub("%%chap_time_left_eta(%b{})", function(brace)
+            return formatEtaEpoch(os.time() + 30 * 60, brace:sub(2, -2))
+        end)
+        r = r:gsub("%%book_time_left_eta(%b{})", function(brace)
+            return formatEtaEpoch(os.time() + 120 * 60, brace:sub(2, -2))
         end)
         -- %plugin_content{<plugin>} preview label, before generic {N}
         r = r:gsub("%%plugin_content(%b{})", function(brace)
@@ -1851,6 +1893,33 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
                 if result and result ~= "N/A" then time_left_doc = result end
             elseif doc_left then
                 time_left_doc = "0m"
+            end
+        end
+    end
+
+    -- ETA epochs for %chap_time_left_eta / %book_time_left_eta. Derived from
+    -- pages_left × avg_time (seconds) instead of parsing the formatted
+    -- chap/book_time_left strings — mirrors how buildConditionState computes
+    -- state.chap_time_left in minutes.
+    local eta_chap_epoch
+    local eta_book_epoch
+    if needs("chap_time_left_eta", "book_time_left_eta")
+            and pageno and doc and ui.statistics and ui.statistics.avg_time then
+        local avg = ui.statistics.avg_time
+        if avg and avg > 0 then
+            local now = os.time()
+            if needs("chap_time_left_eta") then
+                local ch_left = ui.toc and ui.toc:getChapterPagesLeft(pageno, true)
+                if not ch_left then ch_left = doc:getTotalPagesLeft(pageno) end
+                if ch_left and ch_left > 0 then
+                    eta_chap_epoch = now + math.floor(ch_left * avg + 0.5)
+                end
+            end
+            if needs("book_time_left_eta") then
+                local doc_left = doc:getTotalPagesLeft(pageno)
+                if doc_left and doc_left > 0 then
+                    eta_book_epoch = now + math.floor(doc_left * avg + 0.5)
+                end
             end
         end
     end
@@ -2350,6 +2419,8 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         -- Time/Reading
         chap_time_left = tostring(time_left_chapter),
         book_time_left = tostring(time_left_doc),
+        chap_time_left_eta = formatEtaEpoch(eta_chap_epoch, eta_formats.chap_time_left_eta),
+        book_time_left_eta = formatEtaEpoch(eta_book_epoch, eta_formats.book_time_left_eta),
         time_12h = time_12h,
         time_24h = time_24h,
         time     = time_24h,              -- plain %time = %time_24h
@@ -2432,7 +2503,9 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         page_num = true, page_count = true, book_pct = true, book_pct_left = true, pages_left = true,
         chap_pct = true, chap_pct_left = true, chap_read = true, chap_pages = true, chap_pages_left = true,
         chap_num = true, chap_count = true,
-        chap_time_left = true, book_time_left = true, time_12h = true, time_24h = true,
+        chap_time_left = true, book_time_left = true,
+        chap_time_left_eta = true, book_time_left_eta = true,
+        time_12h = true, time_24h = true,
         time = true,
         session_time = true, session_pages = true, speed = true,
     }

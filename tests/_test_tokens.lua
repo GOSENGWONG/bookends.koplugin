@@ -310,6 +310,47 @@ test("datetime: mixed with literal text", function()
 end)
 
 -- ============================================================================
+-- %chap_time_left_eta / %book_time_left_eta — clock-time ETA tokens
+-- ============================================================================
+test("eta: %chap_time_left_eta{%H:%M} in preview renders HH:MM", function()
+    local r = Tokens.expandPreview("%chap_time_left_eta{%H:%M}",
+        { view = {} }, nil, nil, 2, nil)
+    assert(r:match("^%d%d:%d%d$"), "expected HH:MM, got: " .. r)
+end)
+
+test("eta: %book_time_left_eta{%H:%M} in preview renders HH:MM", function()
+    local r = Tokens.expandPreview("%book_time_left_eta{%H:%M}",
+        { view = {} }, nil, nil, 2, nil)
+    assert(r:match("^%d%d:%d%d$"), "expected HH:MM, got: " .. r)
+end)
+
+test("eta: preview chap (+30m) and book (+2h) differ", function()
+    local r = Tokens.expandPreview("%chap_time_left_eta{%H:%M}|%book_time_left_eta{%H:%M}",
+        { view = {} }, nil, nil, 2, nil)
+    local a, b = r:match("^(%d%d:%d%d)|(%d%d:%d%d)$")
+    assert(a and b, "expected two HH:MM separated by |, got: " .. r)
+    assert(a ~= b, "expected chap ETA (+30m) to differ from book ETA (+2h): " .. r)
+end)
+
+test("eta: bare %chap_time_left_eta preview shows placeholder", function()
+    local r = Tokens.expandPreview("%chap_time_left_eta",
+        { view = {} }, nil, nil, 2, nil)
+    eq(r, "[ch.eta]")
+end)
+
+test("eta: bare %book_time_left_eta preview shows placeholder", function()
+    local r = Tokens.expandPreview("%book_time_left_eta",
+        { view = {} }, nil, nil, 2, nil)
+    eq(r, "[eta]")
+end)
+
+test("eta: custom format %chap_time_left_eta{%H-%M} respected", function()
+    local r = Tokens.expandPreview("%chap_time_left_eta{%H-%M}",
+        { view = {} }, nil, nil, 2, nil)
+    assert(r:match("^%d%d%-%d%d$"), "expected HH-MM, got: " .. r)
+end)
+
+-- ============================================================================
 -- (More tests added by subsequent tasks.)
 -- ============================================================================
 
