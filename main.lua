@@ -1180,29 +1180,6 @@ function Bookends:paintTo(bb, x, y)
     end
 end
 
---- Convert a settings-stored color value (number, {grey=N}, {hex="#RRGGBB"},
---- false, or nil) to a Blitbuffer colour object (or false for transparent).
---- Delegates per-value parsing + memoisation to bookends_colour so hex → RGB
---- and greyscale-fallback are consistent with text_color / symbol_color.
-local function resolveBarColors(bc)
-    local Colour = require("bookends_colour")
-    local is_color_enabled = Screen:isColorEnabled()
-    local function cv(v) return Colour.parseColorValue(v, is_color_enabled) end
-    return {
-        fill = cv(bc.fill),
-        bg = cv(bc.bg),
-        track = cv(bc.track),
-        tick = cv(bc.tick),
-        border = cv(bc.border),
-        invert = cv(bc.invert),
-        metro_fill = cv(bc.metro_fill),
-        invert_read_ticks = bc.invert_read_ticks,
-        tick_height_pct = bc.tick_height_pct,
-        border_thickness = bc.border_thickness,
-        read_height_pct = bc.read_height_pct,
-        unread_height_pct = bc.unread_height_pct,
-    }
-end
 
 --- Compute the progress percentage and tick marks for a single bar.
 --- Returns (pct, ticks).
@@ -1351,7 +1328,7 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
     -- (#43) and is falsy in Lua, so an `or`-chain would skip resolving even
     -- though the user has stored a real preference. next() catches it.
     if next(bc) ~= nil then
-        bar_colors = resolveBarColors(bc)
+        bar_colors = Colour.resolveBarColors(bc, Screen:isColorEnabled())
     end
 
     local text_color = self.settings:readSetting("text_color")
@@ -1367,7 +1344,7 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                 local direction = bar_cfg.direction or (vertical and "ttb" or "ltr")
                 local paint_vertical = direction == "ttb" or direction == "btt"
                 local paint_reverse = direction == "rtl" or direction == "btt"
-                local colors = bar_cfg.colors and resolveBarColors(bar_cfg.colors) or bar_colors
+                local colors = bar_cfg.colors and Colour.resolveBarColors(bar_cfg.colors, Screen:isColorEnabled()) or bar_colors
                 -- Ensure global tick_height_pct is always available
                 if colors and not colors.tick_height_pct and global_tick_height_pct then
                     colors.tick_height_pct = global_tick_height_pct
@@ -1725,7 +1702,7 @@ function Bookends:_paintToInner(bb, x, y)
                     local merged = {}
                     for k, v in pairs(global_bc) do merged[k] = v end
                     for k, v in pairs(line_colors) do merged[k] = v end
-                    cfg.bar_colors = resolveBarColors(merged)
+                    cfg.bar_colors = Colour.resolveBarColors(merged, Screen:isColorEnabled())
                 else
                     cfg.bar_colors = bar_colors
                 end

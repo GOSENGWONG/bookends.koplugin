@@ -151,4 +151,37 @@ function Colour.flushCache()
     _last_color_mode = nil  -- reset so next parseColorValue re-seeds the mode
 end
 
+--- Resolve a stored bar_colors table into a Blitbuffer-Color-typed table.
+-- Each colour-shape field (table {hex=…} / table {grey=…} / number / false)
+-- is converted via parseColorValue; numeric/boolean fields pass through.
+-- Storage shape is identical across the three scopes (global / per-bar /
+-- per-line); this function normalises them all into a single shape that
+-- paintProgressBar understands.
+--
+-- @param bc table  raw stored bar_colors-shaped table
+-- @param is_color_enabled boolean  Screen:isColorEnabled() value (caller-supplied
+--                                  so the function stays pure and unit-testable)
+-- @return table  resolved colours table; keys: fill, bg, track*, tick, border,
+--                invert, metro_fill*, invert_read_ticks, tick_height_pct,
+--                border_thickness, read_height_pct, unread_height_pct
+--                (* track and metro_fill are transitional; Task 3 of the
+--                 colour-vocab consolidation plan removes them.)
+function Colour.resolveBarColors(bc, is_color_enabled)
+    local function cv(v) return Colour.parseColorValue(v, is_color_enabled) end
+    return {
+        fill = cv(bc.fill),
+        bg = cv(bc.bg),
+        track = cv(bc.track),
+        tick = cv(bc.tick),
+        border = cv(bc.border),
+        invert = cv(bc.invert),
+        metro_fill = cv(bc.metro_fill),
+        invert_read_ticks = bc.invert_read_ticks,
+        tick_height_pct = bc.tick_height_pct,
+        border_thickness = bc.border_thickness,
+        read_height_pct = bc.read_height_pct,
+        unread_height_pct = bc.unread_height_pct,
+    }
+end
+
 return Colour
