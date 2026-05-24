@@ -184,5 +184,36 @@ test("toStorageShape('xyzzy') → nil (non-hex chars)", function()
     eq(Colour.toStorageShape("xyzzy"), nil)
 end)
 
+-- resolveBarColors back-compat shim (#43 + colour-vocab consolidation)
+test("resolveBarColors: metro_fill aliases to fill when fill absent", function()
+    local out = Colour.resolveBarColors({ metro_fill = { grey = 0x40 } }, true)
+    -- Either Color8 or ColorRGB32 representation, but out.fill must be non-nil
+    -- and represent the source value.
+    assert(out.fill, "expected out.fill to be set from metro_fill shim")
+end)
+test("resolveBarColors: fill wins over metro_fill when both set", function()
+    local out = Colour.resolveBarColors({
+        fill = { grey = 0x40 },
+        metro_fill = { grey = 0x80 },
+    }, false)
+    -- Greyscale path: both produce Color8; we can compare luminance bytes via .v
+    assert(out.fill, "expected out.fill set")
+    assert(out.fill.v == 0x40,
+        "expected out.fill to come from fill (0x40), got " .. tostring(out.fill.v))
+end)
+test("resolveBarColors: track aliases to bg when bg absent", function()
+    local out = Colour.resolveBarColors({ track = { grey = 0x40 } }, true)
+    assert(out.bg, "expected out.bg to be set from track shim")
+end)
+test("resolveBarColors: transparent (false) for fill survives shim", function()
+    -- `false` is the explicit-transparent sentinel from #43.
+    -- It must beat the legacy metro_fill alias.
+    local out = Colour.resolveBarColors({
+        fill = false,
+        metro_fill = { grey = 0x40 },
+    }, true)
+    eq(out.fill, false, "out.fill should remain false (explicit transparent), not aliased from metro_fill")
+end)
+
 io.write(string.format("%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)

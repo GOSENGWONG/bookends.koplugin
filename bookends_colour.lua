@@ -161,21 +161,24 @@ end
 -- @param bc table  raw stored bar_colors-shaped table
 -- @param is_color_enabled boolean  Screen:isColorEnabled() value (caller-supplied
 --                                  so the function stays pure and unit-testable)
--- @return table  resolved colours table; keys: fill, bg, track*, tick, border,
---                invert, metro_fill*, invert_read_ticks, tick_height_pct,
---                border_thickness, read_height_pct, unread_height_pct
---                (* track and metro_fill are transitional; Task 3 of the
---                 colour-vocab consolidation plan removes them.)
+-- @return table  resolved colours table; keys: fill, bg, tick, border, invert,
+--                invert_read_ticks, tick_height_pct, border_thickness,
+--                read_height_pct, unread_height_pct
 function Colour.resolveBarColors(bc, is_color_enabled)
     local function cv(v) return Colour.parseColorValue(v, is_color_enabled) end
+    -- Legacy field aliases: metro_fill→fill, track→bg (read-only shim).
+    -- Must not use `or`-chains: `false` is the explicit-transparent sentinel
+    -- (#43) and is non-nil but falsy, so `false or bc.metro_fill` would
+    -- incorrectly evaluate to bc.metro_fill. Explicit if/else handles it.
+    local fill_src, bg_src
+    if bc.fill ~= nil then fill_src = bc.fill else fill_src = bc.metro_fill end
+    if bc.bg   ~= nil then bg_src   = bc.bg   else bg_src   = bc.track     end
     return {
-        fill = cv(bc.fill),
-        bg = cv(bc.bg),
-        track = cv(bc.track),
+        fill = cv(fill_src),
+        bg   = cv(bg_src),
         tick = cv(bc.tick),
         border = cv(bc.border),
         invert = cv(bc.invert),
-        metro_fill = cv(bc.metro_fill),
         invert_read_ticks = bc.invert_read_ticks,
         tick_height_pct = bc.tick_height_pct,
         border_thickness = bc.border_thickness,
