@@ -243,7 +243,12 @@ function Bookends:buildBarColorsMenu()
     local bc = self.settings:readSetting("bar_colors") or {}
 
     local function saveColors()
-        if not bc.fill and not bc.bg and not bc.track and not bc.tick and bc.invert_read_ticks == nil and not bc.tick_height_pct and not bc.border and not bc.invert and not bc.border_thickness and not bc.metro_fill and not bc.read_height_pct and not bc.unread_height_pct then
+        -- Gate on "any field still stored" rather than `not field` truthy
+        -- checks: `false` is the explicit-transparent sentinel (#43) and
+        -- is falsy in Lua, so the old gate wiped the whole bar_colors key
+        -- when the only field set was a transparent one. next() ignores
+        -- the value and checks key presence.
+        if next(bc) == nil then
             self.settings:delSetting("bar_colors")
         else
             self.settings:saveSetting("bar_colors", bc)
