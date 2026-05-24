@@ -1289,11 +1289,8 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
     elseif style == "wavy" then
         -- Wavy ribbon: the entire bar follows a sine wave path.
         -- Two-toned fill with a position dot riding the curve.
-        local wave_fill = resolveColor(custom_fill, Blitbuffer.COLOR_DARK_GRAY)
-        -- wavy's "unread" ribbon historically used `track` only; accept `bg`
-        -- as a higher-priority override so the global "Unread color" menu item
-        -- also affects wavy (matches the semantics of every other bar style).
-        local wave_track = resolveColor(custom_bg, resolveColor(custom_track, Blitbuffer.COLOR_GRAY))
+        local wave_fill  = resolveColor(custom_fill, Blitbuffer.COLOR_DARK_GRAY)
+        local wave_track = resolveColor(custom_bg,   Blitbuffer.COLOR_GRAY)
         local wave_dot = resolveColor(custom_tick, Blitbuffer.COLOR_BLACK)
 
         local amplitude = math.floor(thickness * 0.35)
