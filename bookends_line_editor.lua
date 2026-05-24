@@ -239,35 +239,69 @@ function LineEditor.attach(Bookends)
                 applyLivePreview()
             end
 
-            local function colourRow(title, field)
+            local DEFAULT_PCT = { fill = 75, bg = 25 }
+
+            local function pctLabel(field)
                 local v = lc[field]
-                local display
-                if v == nil then display = _("default")
-                elseif type(v) == "table" and v.hex then display = v.hex
-                elseif type(v) == "table" and v.grey then display = string.format("#%02X", v.grey)
-                elseif type(v) == "number" then display = string.format("#%02X", v)
-                else display = tostring(v) end
+                if v == nil then return _("default") end
+                if type(v) == "table" and v.hex then return v.hex end
+                local byte
+                if type(v) == "table" and v.grey then byte = v.grey
+                elseif type(v) == "number" then byte = v end
+                if byte then
+                    local pct = math.floor((0xFF - byte) * 100 / 0xFF + 0.5)
+                    if pct == 0 then return _("transparent") end
+                    return pct .. "%"
+                end
+                return _("default")
+            end
+
+            local function colourRow(title, field)
+                local default_pct = DEFAULT_PCT[field] or 50
                 return {{
-                    text = title .. ": " .. display,
+                    text = title .. ": " .. pctLabel(field),
                     callback = function()
                         UIManager:close(_bar_style_dialog)
-                        local current_hex
-                        if type(v) == "table" and v.hex then current_hex = v.hex
-                        elseif type(v) == "table" and v.grey then
-                            local g = string.format("%02X", v.grey)
-                            current_hex = "#" .. g .. g .. g
+                        if Screen:isColorEnabled() then
+                            -- Colour device: hex palette picker.
+                            local v = lc[field]
+                            local current_hex
+                            if type(v) == "table" and v.hex then current_hex = v.hex
+                            elseif type(v) == "table" and v.grey then
+                                local g = string.format("%02X", v.grey)
+                                current_hex = "#" .. g .. g .. g
+                            elseif type(v) == "number" then
+                                local g = string.format("%02X", v)
+                                current_hex = "#" .. g .. g .. g
+                            end
+                            local default_hex = Colour.defaultHexFor(field)
+                            plugin:showColourPicker(title, current_hex, default_hex,
+                                function(new_hex)
+                                    lc[field] = Colour.toStorageShape(new_hex)
+                                    persist(); openColoursMenu()
+                                end,
+                                function()
+                                    lc[field] = nil; persist(); openColoursMenu()
+                                end,
+                                function() openColoursMenu() end,
+                                nil)
+                            return
                         end
-                        local default_hex = Colour.defaultHexFor(field)
-                        plugin:showColourPicker(title, current_hex, default_hex,
-                            function(new_hex)
-                                lc[field] = Colour.toStorageShape(new_hex)
-                                persist(); openColoursMenu()
+                        -- Greyscale device: % black nudge dialog, mirroring colours_menu.lua.
+                        local v = lc[field]
+                        local byte
+                        if type(v) == "table" and v.grey then byte = v.grey
+                        elseif type(v) == "number" then byte = v end
+                        local current = byte and math.floor((0xFF - byte) * 100 / 0xFF + 0.5) or default_pct
+                        plugin:showNudgeDialog(title, current, 0, 100, default_pct, "%",
+                            function(val)
+                                lc[field] = { grey = 0xFF - math.floor(val * 0xFF / 100 + 0.5) }
+                                persist()
                             end,
-                            function()
-                                lc[field] = nil; persist(); openColoursMenu()
-                            end,
-                            function() openColoursMenu() end,
-                            nil)
+                            function() openColoursMenu() end,  -- on_close
+                            nil, nil, nil,
+                            function() lc[field] = nil; persist() end,  -- on_default
+                            _("Default") .. " (" .. _("per style") .. ")")
                     end,
                 }}
             end
