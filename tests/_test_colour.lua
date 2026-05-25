@@ -215,5 +215,19 @@ test("resolveBarColors: transparent (false) for fill survives shim", function()
     eq(out.fill, false, "out.fill should remain false (explicit transparent), not aliased from metro_fill")
 end)
 
+-- Hardcoded defaults at paint time: resolveBarColors with empty input
+-- should return a canonical shape where every colour field is nil
+-- (paintProgressBar's resolveColor then falls back to its hardcoded
+-- per-style default). Common case after the v5.13 migration removed
+-- the preset-level bar_colors cascade.
+test("resolveBarColors: empty input returns canonical-shape table", function()
+    local out = Colour.resolveBarColors({}, true)
+    eq(out.fill, nil)
+    eq(out.bg, nil)
+    eq(out.tick, nil)
+    eq(out.border, nil)
+    eq(out.invert, nil)
+end)
+
 io.write(string.format("%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)
