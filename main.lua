@@ -22,6 +22,7 @@ end
 
 local Blitbuffer = require("ffi/blitbuffer")
 local Colour = require("bookends_colour")
+local Migrations = require("bookends_migrations")
 local Geom = require("ui/geometry")
 local Config = require("bookends_config")
 local ConfirmBox = require("ui/widget/confirmbox")
@@ -698,6 +699,64 @@ function Bookends:migrateSchemaIfNeeded()
                 data.schema_version = Config.SCHEMA_VERSION
                 self:updatePresetFile(info.filename, data.name or info.filename, data)
             end
+        end
+    end
+
+    if not self.settings:isTrue("bar_colors_promoted_to_per_bar") then
+        -- Promote global bar_colors / tick_height_pct / tick_width_multiplier
+        -- into each enabled progress bar's per-bar colors. See spec
+        -- docs/superpowers/specs/2026-05-25-remove-preset-bar-defaults-design.md.
+        local logger = require("logger")
+
+        -- 1) Active settings (the in-memory current preset state).
+        if Migrations.barColorsToPerBar(self.settings.data) then
+            logger.info("bookends: migrated active settings bar_colors → per-bar")
+        end
+
+        -- 2) Every preset file on disk. Load each, mutate, persist back via
+        --    updatePresetFile (which preserves the filename — no auto-rename).
+        --    Per-preset failures are logged and skipped so one corrupt file
+        --    doesn't block migration of the rest.
+        local lfs = require("libs/libkoreader-lfs")
+        local presets_dir = self:presetDir()
+        local ok_iter, err_iter = pcall(function()
+            if lfs.attributes(presets_dir, "mode") ~= "directory" then return end
+            for filename in lfs.dir(presets_dir) do
+                if filename:match("%.lua$") then
+                    local path = presets_dir .. "/" .. filename
+                    -- loadPresetFile returns (nil, err_string) on failure; it
+                    -- never raises, so no pcall needed. Capturing both values
+                    -- preserves the actual parse error in the log.
+                    local data, lerr = self.loadPresetFile(path)
+                    if data and type(data) == "table" then
+                        if Migrations.barColorsToPerBar(data) then
+                            local preset_name = data.name or filename:gsub("%.lua$", "")
+                            -- updatePresetFile now returns true on successful
+                            -- write, false if io.open failed. Treat a false
+                            -- return as a failure to migrate this preset.
+                            local ok_w, werr = pcall(self.updatePresetFile, self, filename, preset_name, data)
+                            local wrote_ok = ok_w and werr ~= false
+                            if wrote_ok then
+                                logger.info("bookends: migrated preset " .. filename)
+                            else
+                                logger.warn("bookends: failed to write migrated preset "
+                                    .. filename .. ": "
+                                    .. (ok_w and "io.open returned false" or tostring(werr)))
+                            end
+                        end
+                    else
+                        logger.warn("bookends: skip preset migration for "
+                            .. filename .. ": " .. tostring(lerr))
+                    end
+                end
+            end
+        end)
+        if not ok_iter then
+            logger.warn("bookends: preset directory iteration failed; will retry on next startup: "
+                .. tostring(err_iter))
+        else
+            self.settings:saveSetting("bar_colors_promoted_to_per_bar", true)
+            self:markDirty()
         end
     end
 end
