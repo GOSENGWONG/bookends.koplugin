@@ -57,7 +57,6 @@ Config.DEFAULTS_KEYS = {
 --- preset provides a value, or cleared from settings otherwise. Omit
 --- `font_face` — the user's default font is never overridden by a preset.
 Config.PRESET_OPTIONAL_KEYS = {
-    "bar_colors", "tick_width_multiplier", "tick_height_pct",
     "text_color", "symbol_color", "background_color",
 }
 
