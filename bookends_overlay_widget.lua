@@ -8,9 +8,13 @@ local Utf8Proc = require("ffi/utf8proc")
 local PacmanSprite = require("bookends_pacman_sprite")
 local Screen = Device.screen
 
--- Pacman bar paint counter: parity drives mouth-open vs mouth-closed.
+-- Pacman bar frame counter. Parity drives mouth-open vs mouth-closed.
+-- ADVANCED ONCE PER PAINT CYCLE by tickPacmanFrame (called from
+-- main.lua's _paintToInner before any bar is painted), not per pacman
+-- bar — so multiple pacmans on screen stay in sync. Read inside
+-- paintProgressBar's pacman branch; never mutated there.
 -- Resets on plugin reload; no persistence needed.
-local _pacman_paint_count = 0
+local _pacman_frame = 0
 
 local ColorRGB32_t = ffi.typeof("ColorRGB32")
 
@@ -59,6 +63,15 @@ local OverlayWidget = {}
 --- colour buffer. KOReader's *RGB32 variants preserve true colour; this
 --- wrapper dispatches by colour type so callers stay shape-agnostic.
 --- Exported as OverlayWidget.bbPaintRect so main.lua can call it directly.
+
+--- Advance the pacman animation frame by one. Callers should invoke
+--- this exactly once per overlay paint cycle, BEFORE any bars are
+--- painted, so all pacman bars in the same paint share a mouth state.
+--- Called from main.lua's _paintToInner.
+function OverlayWidget.tickPacmanFrame()
+    _pacman_frame = _pacman_frame + 1
+end
+
 function OverlayWidget.bbPaintRect(bb, x, y, w, h, c)
     if not c then return end
     if ffi.istype(ColorRGB32_t, c) then
@@ -1404,10 +1417,12 @@ function OverlayWidget.paintProgressBar(bb, x, y, w, h, fraction, ticks, style, 
 
     elseif style == "pacman" then
         -- Pacman bar: read portion is empty, pacman sprite at the read
-        -- fraction, dot strip and power pellet in the unread region. Mouth
-        -- flips between open and closed on every entry to this branch.
-        _pacman_paint_count = _pacman_paint_count + 1
-        local mouth_open = (_pacman_paint_count % 2) == 1
+        -- fraction, dot strip and power pellet in the unread region.
+        -- Mouth state is read from the module-level frame counter that
+        -- advances ONCE per paint cycle (tickPacmanFrame, called from
+        -- _paintToInner before any bar is painted). Multiple pacman
+        -- bars in the same paint share the same mouth state.
+        local mouth_open = (_pacman_frame % 2) == 1
 
         -- Resolve colours. Authentic arcade hex on colour-enabled devices;
         -- strong greyscale defaults on B&W. Custom overrides via the existing
