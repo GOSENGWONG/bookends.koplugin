@@ -61,6 +61,17 @@ function DialogHelpers.showNudgeGrid(opts)
     end
 
     local dialog
+    -- ButtonDialog:reinit() rebuilds the buttons but keeps a stale self.layout
+    -- (buttondialog.lua:267 `self.layout = self.layout or ...`), which strands
+    -- the d-pad cursor on the now-freed widgets — arrows stop working after a
+    -- nudge. Discard the layout so init() adopts the fresh one, then re-anchor
+    -- focus on the next tick (the pressed Button repaints after its callback).
+    -- No-op on touch devices (refocusWidget uses FOCUS_ONLY_ON_NT).
+    local function rebuild()
+        dialog.layout = nil
+        dialog:reinit()
+        dialog:refocusWidget(true)
+    end
     local function revert()
         for field, value in pairs(originals) do
             opts.set_value(field, value)
@@ -71,7 +82,7 @@ function DialogHelpers.showNudgeGrid(opts)
         local new_val = math.max(min_val, (opts.get_value(field) or 0) + delta)
         opts.set_value(field, new_val)
         if opts.on_row_change then opts.on_row_change() end
-        dialog:reinit()
+        rebuild()
     end
 
     local button_rows = {}
@@ -98,7 +109,7 @@ function DialogHelpers.showNudgeGrid(opts)
             text = opts.default_text or _("Default"),
             callback = function()
                 if opts.on_default then opts.on_default() end
-                dialog:reinit()
+                rebuild()
             end,
         },
         {
