@@ -33,7 +33,7 @@ local function test(name, fn) print("--- " .. name); fn() end
 
 local LM = require("menu.library_modal")
 
-local A, B, C, D = {id="A"}, {id="B"}, {id="C"}, {id="D"}
+local A, B, C = {id="A"}, {id="B"}, {id="C"}
 
 test("buildLayout drops empty rows, keeps order", function()
     local layout = LM._buildLayout({ {A}, {}, {B, C}, {} })
@@ -59,6 +59,12 @@ test("clampSelected pulls overshoot back onto the grid", function()
     local sel = LM._clampSelected(layout, { x = 5, y = 9 })
     eq(sel.y, 2, "y clamped to last row")
     eq(sel.x, 1, "x clamped to that row's width")
+end)
+
+test("clampSelected clamps undershot coordinates", function()
+    local layout = { {A, B}, {C} }
+    local sel = LM._clampSelected(layout, { x = 0, y = 0 })
+    eq(sel.y, 1, "y floored to 1"); eq(sel.x, 1, "x floored to 1")
 end)
 
 test("clampSelected defaults to 1,1 for empty/absent input", function()
