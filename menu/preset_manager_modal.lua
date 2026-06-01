@@ -1082,6 +1082,10 @@ function PresetManagerModal._addRow(self, vg, width, row_height, font_size, base
         HorizontalSpan:new{ width = star_gap },
         accent_ic,
     }
+    -- _focus_target: read by LibraryModal._renderListArea to place the inner
+    -- card (not this non-focusable wrapper HorizontalGroup) into the d-pad
+    -- focus grid. Drop this field and gallery/library cards vanish from d-pad
+    -- navigation.
     row_hgroup._focus_target = card
     table.insert(vg, row_hgroup)
     -- Gap between cards

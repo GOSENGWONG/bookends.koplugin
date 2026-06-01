@@ -186,7 +186,6 @@ function TokensLibrary._renderRow(item, slot_dimen, doc_ctx)
     card.ges_events = {
         TapSelect = { GestureRange:new{ ges = "tap", range = card.dimen } },
     }
-    local LibraryModal = require("menu.library_modal")
     LibraryModal._attachFocus(card, card_frame)
     return card
 end

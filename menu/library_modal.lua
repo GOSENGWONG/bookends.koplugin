@@ -761,6 +761,10 @@ function LibraryModal:_renderListArea(content_width, area_height)
             local slot_dimen = Geom:new{ w = content_width, h = row_height }
             local row = self.config.row_renderer(item, slot_dimen)
             table.insert(vg, row)
+            -- A renderer either returns a focusable widget directly, or returns
+            -- a wrapper carrying _focus_target = <inner focusable widget> (e.g.
+            -- preset cards wrap the focusable card body in a HorizontalGroup
+            -- alongside a touch-only accent column).
             local focus_target = row._focus_target or (row.focusable and row) or nil
             if focus_target then self:_pushFocusRow({ focus_target }) end
         end
