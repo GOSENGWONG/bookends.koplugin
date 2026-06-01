@@ -94,7 +94,7 @@ local FOCUS_BORDER = Device.screen:scaleBySize(2)
 --- fields here. `ic.focusable = true` marks it for FocusManager.
 function LibraryModal._attachFocus(ic, frame)
     ic.focusable = true
-    local orig_border = frame.bordersize
+    local orig_border = frame.bordersize or 0
     local orig_color = frame.color
     function ic:onFocus()
         frame.bordersize = FOCUS_BORDER
