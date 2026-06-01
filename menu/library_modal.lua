@@ -82,6 +82,32 @@ function LibraryModal._clampSelected(layout, sel)
     return { x = x, y = y }
 end
 
+-- Focus indicator: 2px on e-ink reads clearly without dominating. Tunable in
+-- the desktop-verification task.
+local FOCUS_BORDER = Device.screen:scaleBySize(2)
+
+--- Attach a d-pad focus highlight to a focusable wrapper `ic`. FocusManager
+--- dispatches Focus/Unfocus to whichever layout cell is current; we toggle a
+--- border on `frame` (the FrameContainer the wrapper renders through) to BLACK
+--- when focused and restore the original border on unfocus. FocusManager
+--- issues the repaint after dispatching (focusmanager.lua), so we only mutate
+--- fields here. `ic.focusable = true` marks it for FocusManager.
+function LibraryModal._attachFocus(ic, frame)
+    ic.focusable = true
+    local orig_border = frame.bordersize
+    local orig_color = frame.color
+    function ic:onFocus()
+        frame.bordersize = FOCUS_BORDER
+        frame.color = Blitbuffer.COLOR_BLACK
+        return true
+    end
+    function ic:onUnfocus()
+        frame.bordersize = orig_border
+        frame.color = orig_color
+        return true
+    end
+end
+
 function LibraryModal:init()
     assert(self.config, "LibraryModal requires a config table")
     -- Pre-populate runtime state from config defaults
@@ -345,6 +371,7 @@ function LibraryModal:_renderTabSegments(title_bar_h)
         local ic = InputContainer:new{ dimen = Geom:new{ w = pill_w, h = title_bar_h }, fc }
         ic.ges_events = { TapSelect = { GestureRange:new{ ges = "tap", range = ic.dimen } } }
         ic.onTapSelect = function() on_tap(); return true end
+        LibraryModal._attachFocus(ic, fc)
         return ic
     end
 
@@ -516,6 +543,7 @@ function LibraryModal:_renderSearchInput(content_width)
         local ic = InputContainer:new{ dimen = Geom:new{ w = btn_w, h = row_h }, fc }
         ic.ges_events = { TapSelect = { GestureRange:new{ ges = "tap", range = ic.dimen } } }
         ic.onTapSelect = function() on_tap(); return true end
+        LibraryModal._attachFocus(ic, fc)
         return ic
     end
 
@@ -605,6 +633,7 @@ function LibraryModal:_renderChipStrip(content_width)
         local ic = InputContainer:new{ dimen = Geom:new{ w = fc:getSize().w, h = fc:getSize().h }, fc }
         ic.ges_events = { TapSelect = { GestureRange:new{ ges = "tap", range = ic.dimen } } }
         ic.onTapSelect = function() self:_onChipTap(chip.key); return true end
+        LibraryModal._attachFocus(ic, fc)
         return ic
     end
 
@@ -791,6 +820,7 @@ function LibraryModal:_renderGridArea(content_width, area_height)
                         return true
                     end
                 end
+                LibraryModal._attachFocus(ic, ic[1])
                 cell_widget = ic
             end
             table.insert(hg, cell_widget)
