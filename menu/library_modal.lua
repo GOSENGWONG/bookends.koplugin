@@ -1012,6 +1012,12 @@ end
 
 function LibraryModal:refresh()
     local Screen = Device.screen
+    -- ORDERING CONTRACT: the section render calls below each push their
+    -- focusable widgets into self._focus_rows as a side-effect, so they MUST
+    -- run in top→bottom visual order for d-pad navigation to feel right.
+    -- Note pagination/footer are deliberately rendered AFTER result_area
+    -- (content) for this reason, even though every section's *visible* slot is
+    -- fixed by the body assembly lower down. Do not reorder these calls.
     self._focus_rows = {}
     local HorizontalGroup = require("ui/widget/horizontalgroup")
     local cw = self.content_w
@@ -1093,6 +1099,10 @@ function LibraryModal:refresh()
     -- rebuild, and re-anchor the cursor so it never points at a now-missing
     -- cell (page/tab/chip/search all rebuild the tree and shift the rows).
     self.layout = LibraryModal._buildLayout(self._focus_rows)
+    -- self.selected carries over across rebuilds and is clamped onto the new
+    -- grid — so it always points at a real cell, but on a tab/chip/search
+    -- change (which rebuilds with a different layout) the cursor lands at the
+    -- clamped previous position rather than resetting to {1,1}. Intended.
     self.selected = LibraryModal._clampSelected(self.layout, self.selected)
     -- Self-bounded dirty rect is sufficient now that the modal is a fixed,
     -- content-derived size. setDirty(nil, ...) was triggering full-screen
