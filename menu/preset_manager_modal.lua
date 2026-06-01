@@ -1039,6 +1039,8 @@ function PresetManagerModal._addRow(self, vg, width, row_height, font_size, base
         card.ges_events.HoldSelect = { GestureRange:new{ ges = "hold", range = card.dimen } }
         card.onHoldSelect = function() opts.on_hold(); return true end
     end
+    local LibraryModal = require("menu.library_modal")
+    LibraryModal._attachFocus(card, card_frame)
 
     -- Right-hand accent column. Local rows show a tappable ★/☆ that toggles
     -- cycle membership. Gallery rows show a ✓ if the preset is already
@@ -1074,12 +1076,14 @@ function PresetManagerModal._addRow(self, vg, width, row_height, font_size, base
         accent_ic = HorizontalSpan:new{ width = star_width }
     end
 
-    table.insert(vg, HorizontalGroup:new{
+    local row_hgroup = HorizontalGroup:new{
         align = "center",
         card,
         HorizontalSpan:new{ width = star_gap },
         accent_ic,
-    })
+    }
+    row_hgroup._focus_target = card
+    table.insert(vg, row_hgroup)
     -- Gap between cards
     table.insert(vg, VerticalSpan:new{ width = Screen:scaleBySize(8) })
 end
