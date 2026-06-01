@@ -1019,8 +1019,6 @@ function LibraryModal:refresh()
     local title = self:_renderTitleBar(cw, self.modal_w)
     local search = self:_renderSearchInput(cw)
     local chips = self:_renderChipStrip(cw)
-    local pagination = self:_renderPagination(cw)
-    local footer = self:_renderFooter(cw)
 
     -- Sized to fit content rather than a screen fraction, so the dialog isn't
     -- bigger than necessary. Uses the row renderer's intrinsic card height
@@ -1065,6 +1063,11 @@ function LibraryModal:refresh()
     else
         result_area = self:_renderListArea(cw, area_height)
     end
+    -- Rendered after the content area so their focus-rows are collected in
+    -- top→bottom screen order (content sits above pagination/footer). The
+    -- visible body assembly below still places them in the same spots.
+    local pagination = self:_renderPagination(cw)
+    local footer = self:_renderFooter(cw)
 
     local body = VerticalGroup:new{
         align = "left",
