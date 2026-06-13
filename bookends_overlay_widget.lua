@@ -800,6 +800,20 @@ function OverlayWidget.parseStyledSegments(text, base_bold, base_italic, base_up
             table.insert(font_stack, name)
             found_tags = true
             pos = end_pos + 1  -- skip past the ']'
+        -- Check for self-closing icon tag [icon=NAME]. NAME is an icon
+        -- filename without extension, resolved at build time via KOReader's
+        -- IconWidget (koreader/icons/ first, then built-in mdlight). Atomic:
+        -- one tag = one image segment, no closing tag. NAME is read verbatim
+        -- up to the first ']' and trimmed, mirroring the [font=NAME] branch.
+        elseif text:match("^%[icon=[^%]]*%]", pos) then
+            local raw, end_pos = text:match("^%[icon=([^%]]*)()%]", pos)
+            local name = (raw or ""):gsub("^%s*(.-)%s*$", "%1")
+            if name ~= "" then
+                flushPending()
+                table.insert(segments, { icon = name })
+                found_tags = true
+            end
+            pos = end_pos + 1  -- skip past the ']'
         -- Check for closing colour tag [/c]
         elseif text:match("^%[/c%]", pos) then
             if #color_stack > 0 then
