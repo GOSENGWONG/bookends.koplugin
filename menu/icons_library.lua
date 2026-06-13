@@ -222,7 +222,12 @@ local function currentItemList(state)
         return items
     end
     if state.active_chip == "svg" then
-        return IconsLibrary._scanUserIcons()
+        local cells = IconsLibrary._scanUserIcons()
+        if #cells == 0 then
+            return { { is_hint = true,
+                label = _("Drop .svg or .png files in koreader/icons/") } }
+        end
+        return cells
     end
     if state.active_chip == "all" or not state.active_chip then
         -- All: the entire Nerd Font index (~2,800 entries) for free browsing,
@@ -280,12 +285,38 @@ end
 function IconsLibrary._renderCell(item, dimen)
     local Font = require("ui/font")
     local TextWidget = require("ui/widget/textwidget")
+    -- Empty-state hint cell (svg chip, no user icons): centred message,
+    -- no glyph, not tappable (on_cell_tap ignores item.is_hint).
+    if item.is_hint then
+        local msg = TextWidget:new{
+            text = item.label or "",
+            face = Font:getFace("cfont", 14),
+            fgcolor = Blitbuffer.COLOR_BLACK,
+            max_width = dimen.w - Screen:scaleBySize(8),
+        }
+        return FrameContainer:new{
+            bordersize = 0, padding = 0, margin = 0,
+            background = Blitbuffer.COLOR_WHITE,
+            CenterContainer:new{ dimen = Geom:new{ w = dimen.w, h = dimen.h }, msg },
+        }
+    end
     local glyph_size = math.max(36, math.floor(dimen.w * 0.16))
-    local glyph_w = TextWidget:new{
-        text = item.glyph or "",
-        face = Font:getFace("symbols", glyph_size),
-        fgcolor = Blitbuffer.COLOR_BLACK,
-    }
+    local glyph_w
+    if item.is_image then
+        local IconWidget = require("ui/widget/iconwidget")
+        glyph_w = IconWidget:new{
+            icon = item.icon,
+            width = glyph_size,
+            height = glyph_size,
+            alpha = true,
+        }
+    else
+        glyph_w = TextWidget:new{
+            text = item.glyph or "",
+            face = Font:getFace("symbols", glyph_size),
+            fgcolor = Blitbuffer.COLOR_BLACK,
+        }
+    end
     local label_w = TextWidget:new{
         text = item.label or "",
         face = Font:getFace("cfont", 11),
@@ -313,6 +344,10 @@ end
 
 -- Brief notification with the canonical name + codepoint on long-tap.
 function IconsLibrary._showCellTooltip(item)
+    if item.is_image then
+        UIManager:show(Notification:new{ text = item.label or "", timeout = 3 })
+        return
+    end
     if not item.canonical then return end
     local code_str = item.code and string.format("U+%04X", item.code) or ""
     local body = item.canonical .. (code_str ~= "" and (" · " .. code_str) or "")
@@ -404,6 +439,7 @@ function IconsLibrary:show(on_select)
         cell_renderer = IconsLibrary._renderCell,
         cell_long_tap = IconsLibrary._showCellTooltip,
         on_cell_tap = function(item)
+            if item.is_hint then return end
             local val = item.insert_value or item.glyph
             if self_ref.modal then UIManager:close(self_ref.modal); self_ref.modal = nil end
             if on_select then on_select(val) end
