@@ -69,5 +69,11 @@ test("icon tag does not break [b] stack balance", function()
     assert(segs, "expected non-nil (tags balanced)")
 end)
 
+test("empty icon name emits no segment", function()
+    -- [icon=] is swallowed (no segment, no tags found) -> parser returns nil.
+    local segs = parse("[icon=]", false, false, false, nil)
+    assert(segs == nil, "empty-name icon tag should not produce segments")
+end)
+
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)
