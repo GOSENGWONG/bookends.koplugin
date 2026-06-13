@@ -937,6 +937,14 @@ function OverlayWidget.buildStyledLine(segments, cfg, available_w, max_width)
             -- Square, sized to the line's font size so it sits inline on the
             -- text baseline. cfg.face.size is the scaled pixel size.
             local icon_size = math.floor((cfg.face and cfg.face.size) or 20)
+            -- Respect the line's truncation limit. An icon is atomic -- it
+            -- can't be ellipsis-truncated like text -- so if the available
+            -- width is already used up, stop adding segments (mirrors the
+            -- text branch's `remaining <= 0 then break`).
+            if max_width then
+                local remaining = max_width - total_w
+                if remaining <= 0 then break end
+            end
             local icon_w = IconWidget:new{
                 icon = seg.icon,
                 width = icon_size,
