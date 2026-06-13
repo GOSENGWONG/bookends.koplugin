@@ -337,6 +337,11 @@ end
 --- Open the icons library modal. on_select is called with the chosen
 --- glyph (or token, for dynamic entries) when the user taps a cell.
 function IconsLibrary:show(on_select)
+    -- Drop the per-session scan cache so icons the user dropped into
+    -- koreader/icons/ since the last open show up on this open (the common
+    -- "add a file, reopen the picker" flow). The scan is cheap and the cache
+    -- still spares the repeated per-refresh rescans within a single session.
+    _user_icons = nil
     -- Captures the runtime state used by the config callbacks. This lives in
     -- a closure rather than on the modal so taps/chips/search can mutate it
     -- without going through LibraryModal's own state.
