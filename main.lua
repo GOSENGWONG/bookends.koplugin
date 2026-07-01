@@ -1801,6 +1801,11 @@ function Bookends:_paintToInner(bb, x, y)
             cfg.uppercase = (pos_settings.line_uppercase and pos_settings.line_uppercase[i]) or false
             cfg.text_color = text_color
             cfg.symbol_color = symbol_color
+            -- Skim-gesture parity (#83): inline bars register their paint
+            -- rect into the same list full-width bars use, so long-press
+            -- finds them too. Shares the table `_renderProgressBars` also
+            -- appends to later in this same repaint pass.
+            cfg.hold_rects = self._hold_rects
             -- Bar data (keyed by expanded line index, same order as line_configs)
             local expanded_idx = #line_configs + 1
             if bar_data[key] and bar_data[key][expanded_idx] then
