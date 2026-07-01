@@ -1801,5 +1801,19 @@ test("currentChapterRange: nil when there's no toc", function()
     eq(ce, nil, "no toc -> nil")
 end)
 
+test("inline bar: bookmark_fracs computed on both book and chapter scales", function()
+    local ui = stubUi(5, 100, {
+        toc = { { page = 1, depth = 1, title = "C1" }, { page = 10, depth = 1, title = "C2" } },
+        start = 1, next = 10,
+    })
+    -- Build a minimal preset line that carries a %bar token so Tokens.expand
+    -- returns a line_bar with book/chapter bar_info populated.
+    local _, _, line_bar = Tokens.expand("%bar", ui, 0, 0, nil, 1, nil, nil,
+        { marker_pages = { bookmarks = { 3, 8, 50 } } })
+    -- Page 3 and 8 fall inside the current chapter (1..9); page 50 doesn't.
+    eq(#line_bar.book.bookmark_fracs, 3, "all three bookmarks map onto the book scale")
+    eq(#line_bar.chapter.bookmark_fracs, 2, "only pages 3 and 8 fall inside the current chapter (1..9)")
+end)
+
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)

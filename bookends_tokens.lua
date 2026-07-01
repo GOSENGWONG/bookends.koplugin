@@ -1983,6 +1983,14 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             end
             bar_info.book.session_frac   = bookFrac(mp.session)
             bar_info.book.book_open_frac = bookFrac(mp.book_open)
+            if mp.bookmarks then
+                local book_fracs = {}
+                for _, p in ipairs(mp.bookmarks) do
+                    local f = bookFrac(p)
+                    if f then book_fracs[#book_fracs + 1] = f end
+                end
+                bar_info.book.bookmark_fracs = book_fracs
+            end
             if ui.toc then
                 local cs = ui.toc:getPreviousChapter(bar_pageno)
                 if ui.toc:isChapterStart(bar_pageno) then cs = bar_pageno end
@@ -1996,6 +2004,16 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
                     end
                     bar_info.chapter.session_frac   = chFrac(mp.session)
                     bar_info.chapter.book_open_frac = chFrac(mp.book_open)
+                    if mp.bookmarks then
+                        local chap_fracs = {}
+                        for _, p in ipairs(mp.bookmarks) do
+                            if p and p >= cs and p < ce then
+                                local f = chFrac(p)
+                                if f then chap_fracs[#chap_fracs + 1] = f end
+                            end
+                        end
+                        bar_info.chapter.bookmark_fracs = chap_fracs
+                    end
                 end
             end
         end

@@ -1735,7 +1735,8 @@ function Bookends:_paintToInner(bb, x, y)
                         symbol_color, paint_ctx,
                         { legacy_literal = is_edit_line, stats_cache = stats_cache,
                           marker_pages = { session = self._marker_session_page,
-                                           book_open = self._marker_book_open_page } })
+                                           book_open = self._marker_book_open_page,
+                                           bookmarks = self._bookmark_pages } })
                     if not is_empty then
                         table.insert(expanded_lines, result)
                         table.insert(final_indices, visible_indices[j])
