@@ -1209,6 +1209,23 @@ end
 function Bookends:getSessionPages()
     return math.max(0, (self.session_max_page or 0) - (self.session_start_page or 0))
 end
+-- Plain page-bookmarks (not highlights) for the current book, deduped by
+-- page, as a flat list of page numbers. Used by the "Bookmarks" bar-marker
+-- type (#79). Returns nil when there's nothing to show (no annotation
+-- module, or an empty/absent annotations list) so callers can treat "nil"
+-- and "empty list" the same way.
+function Bookends:getBookmarkPages()
+    local ann = self.ui.annotation
+    if not ann or not ann.annotations then return nil end
+    local seen, pages = {}, {}
+    for _, item in ipairs(ann.annotations) do
+        if not item.drawer and item.pageno and not seen[item.pageno] then
+            seen[item.pageno] = true
+            pages[#pages + 1] = item.pageno
+        end
+    end
+    return pages
+end
 -- Build the renderer-facing markers table (#77) for one bar line.
 -- @param mk_cfg table: per-line config { top = {type,size,offset,color}, bottom = {...} }
 -- @param src table or nil: the chosen bar_info (book/chapter) carrying

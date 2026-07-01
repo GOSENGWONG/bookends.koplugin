@@ -90,5 +90,26 @@ test("nil config -> nil", function()
     eq(self:buildBarMarkers(nil, SRC), nil, "nil cfg")
 end)
 
+test("getBookmarkPages: dedupes by page, excludes highlights (item.drawer set)", function()
+    self.ui = { annotation = { annotations = {
+        { pageno = 12 },                  -- plain bookmark
+        { pageno = 12 },                  -- duplicate page -> deduped
+        { pageno = 40, drawer = "lighten" }, -- highlight -> excluded
+        { pageno = 7 },                   -- plain bookmark
+    } } }
+    local pages = self:getBookmarkPages()
+    table.sort(pages)
+    eq(#pages, 2, "two distinct plain-bookmark pages")
+    eq(pages[1], 7, "page 7")
+    eq(pages[2], 12, "page 12 (deduped)")
+end)
+
+test("getBookmarkPages: nil when annotation module or list is absent", function()
+    self.ui = { annotation = nil }
+    eq(self:getBookmarkPages(), nil, "no annotation module -> nil")
+    self.ui = { annotation = { annotations = nil } }
+    eq(self:getBookmarkPages(), nil, "no annotations list -> nil")
+end)
+
 print(pass .. " pass / " .. fail .. " fail")
 os.exit(fail == 0 and 0 or 1)
