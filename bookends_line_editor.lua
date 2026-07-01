@@ -233,11 +233,12 @@ function LineEditor.attach(Bookends)
 
         -- Bar marker (#77) menu helpers. line_bar_markers is nil or
         -- { top = {type,size,offset,color}, bottom = {...} }; an absent slot = Off.
-        local MARKER_TYPE_CYCLE = { "off", "session", "book_open" }
+        local MARKER_TYPE_CYCLE = { "off", "session", "book_open", "bookmarks" }
         local MARKER_TYPE_LABELS = {
             off = _("Off"),
             session = _("Start of session"),
             book_open = _("Book opened"),
+            bookmarks = _("Bookmarks"),
         }
         local MARKER_STYLE_CYCLE = { "chevron", "solid" }
         local MARKER_STYLE_LABELS = {
