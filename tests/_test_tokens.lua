@@ -558,6 +558,34 @@ test("book_time_left with pages remaining still renders the formatted duration",
     eq(r, "10m", "20 pages * 30s / 60 = 10m, via the stubbed getTimeForPages")
 end)
 
+test("book_time_left_h / book_time_left_min split correctly", function()
+    local ui = stubUiForTimeLeft({ doc_left = 82, avg_time = 60 })
+    -- 82 pages * 60s / 60 = 82 minutes = 1h 22m
+    local r = Tokens.expand("%book_time_left_h:%book_time_left_min", ui, 0, 0)
+    eq(r, "1:22", "82 minutes total splits into 1 hour, 22 minutes")
+end)
+
+test("chap_time_left_h / chap_time_left_min split correctly (no toc, falls back to doc)", function()
+    local ui = stubUiForTimeLeft({ doc_left = 5, avg_time = 60 })
+    -- 5 pages * 60s / 60 = 5 minutes = 0h 5m
+    local r = Tokens.expand("%chap_time_left_h:%chap_time_left_min", ui, 0, 0)
+    eq(r, "0:5", "5 minutes total splits into 0 hours, 5 minutes")
+end)
+
+test("book_time_left_h/_min are empty when avg_time is unavailable", function()
+    local ui = stubUiForTimeLeft({ doc_left = 20, avg_time = 0 })
+    local r = Tokens.expand("[%book_time_left_h][%book_time_left_min]", ui, 0, 0)
+    eq(r, "[][]", "no avg_time -> both split tokens render empty, matching how the composite token behaves")
+end)
+
+test("chap_time_left_min alone does not auto-hide the line when the value is a real zero", function()
+    -- 5 pages * 60s / 60 = 5 minutes = 0h 5m -> chap_time_left_h legitimately renders "0",
+    -- same class of case as the _lastdigit auto-hide gate (0 is meaningful, not "no content").
+    local ui = stubUiForTimeLeft({ doc_left = 5, avg_time = 60 })
+    local _, is_empty = Tokens.expand("%chap_time_left_h", ui, 0, 0)
+    eq(is_empty, false, "chap_time_left_h = 0 is a real value and must not be treated as an empty line")
+end)
+
 test("stats stub: smoke — getCurrentBookStats returns injected values", function()
     local ui = stubUiWithStats({ current_pages = 7, current_duration = 600 })
     local d, p = ui.statistics:getCurrentBookStats()

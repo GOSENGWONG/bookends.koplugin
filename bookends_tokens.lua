@@ -2010,22 +2010,38 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
     -- matching stock readerfooter's chapter_time_to_read fallback.
     local time_left_chapter = ""
     local time_left_doc = ""
-    if needs("chap_time_left", "book_time_left") and pageno and ui.statistics and ui.statistics.getTimeForPages then
-        if needs("chap_time_left") then
+    local chap_time_left_h, chap_time_left_min
+    local book_time_left_h, book_time_left_min
+    if needs("chap_time_left", "book_time_left", "chap_time_left_h", "chap_time_left_min",
+             "book_time_left_h", "book_time_left_min")
+            and pageno and ui.statistics and ui.statistics.getTimeForPages then
+        if needs("chap_time_left", "chap_time_left_h", "chap_time_left_min") then
             local ch_left = ui.toc and ui.toc:getChapterPagesLeft(pageno, true)
             if not ch_left then
                 ch_left = doc:getTotalPagesLeft(pageno)
             end
             if ch_left then
-                local result = ui.statistics:getTimeForPages(math.max(0, ch_left))
+                ch_left = math.max(0, ch_left)
+                local result = ui.statistics:getTimeForPages(ch_left)
                 if result and result ~= "N/A" then time_left_chapter = result end
+                if ui.statistics.avg_time and ui.statistics.avg_time > 0 then
+                    local total_min = math.floor(ch_left * ui.statistics.avg_time / 60)
+                    chap_time_left_h = math.floor(total_min / 60)
+                    chap_time_left_min = total_min % 60
+                end
             end
         end
-        if needs("book_time_left") then
+        if needs("book_time_left", "book_time_left_h", "book_time_left_min") then
             local doc_left = doc:getTotalPagesLeft(pageno)
             if doc_left then
-                local result = ui.statistics:getTimeForPages(math.max(0, doc_left))
+                doc_left = math.max(0, doc_left)
+                local result = ui.statistics:getTimeForPages(doc_left)
                 if result and result ~= "N/A" then time_left_doc = result end
+                if ui.statistics.avg_time and ui.statistics.avg_time > 0 then
+                    local total_min = math.floor(doc_left * ui.statistics.avg_time / 60)
+                    book_time_left_h = math.floor(total_min / 60)
+                    book_time_left_min = total_min % 60
+                end
             end
         end
     end
@@ -2585,6 +2601,10 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         -- Time/Reading
         chap_time_left = tostring(time_left_chapter),
         book_time_left = tostring(time_left_doc),
+        chap_time_left_h   = chap_time_left_h and tostring(chap_time_left_h) or "",
+        chap_time_left_min = chap_time_left_min and tostring(chap_time_left_min) or "",
+        book_time_left_h   = book_time_left_h and tostring(book_time_left_h) or "",
+        book_time_left_min = book_time_left_min and tostring(book_time_left_min) or "",
         chap_time_left_eta = formatEtaEpoch(eta_chap_epoch, date_formats.chap_time_left_eta),
         book_time_left_eta = formatEtaEpoch(eta_book_epoch, date_formats.book_time_left_eta),
         book_finish_date   = formatFinishDate(book_finish_epoch, date_formats.book_finish_date),
@@ -2671,6 +2691,8 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
         chap_pct = true, chap_pct_left = true, chap_read = true, chap_pages = true, chap_pages_left = true,
         chap_num = true, chap_count = true,
         chap_time_left = true, book_time_left = true,
+        chap_time_left_h = true, chap_time_left_min = true,
+        book_time_left_h = true, book_time_left_min = true,
         chap_time_left_eta = true, book_time_left_eta = true,
         book_finish_date = true,
         time_12h = true, time_24h = true,
