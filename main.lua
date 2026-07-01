@@ -1544,9 +1544,30 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                 if bar_cfg.markers then
                     local kind = bar_cfg.type == "chapter" and "chapter" or "book"
                     local doc, toc = self.ui.document, self.ui.toc
+                    local bookmark_fracs
+                    if self._bookmark_pages then
+                        bookmark_fracs = {}
+                        if kind == "book" then
+                            for _, p in ipairs(self._bookmark_pages) do
+                                local f = Tokens.markerFracForBar(doc, toc, kind, pageno_local, p)
+                                if f then bookmark_fracs[#bookmark_fracs + 1] = f end
+                            end
+                        else
+                            local cs, ce = Tokens.currentChapterRange(toc, doc, pageno_local)
+                            if cs then
+                                for _, p in ipairs(self._bookmark_pages) do
+                                    if p >= cs and p < ce then
+                                        local f = Tokens.markerFracForBar(doc, toc, kind, pageno_local, p)
+                                        if f then bookmark_fracs[#bookmark_fracs + 1] = f end
+                                    end
+                                end
+                            end
+                        end
+                    end
                     local src = {
                         session_frac   = Tokens.markerFracForBar(doc, toc, kind, pageno_local, self._marker_session_page),
                         book_open_frac = Tokens.markerFracForBar(doc, toc, kind, pageno_local, self._marker_book_open_page),
+                        bookmark_fracs = bookmark_fracs,
                     }
                     markers = self:buildBarMarkers(bar_cfg.markers, src)
                 end
@@ -1621,6 +1642,7 @@ end
 
 function Bookends:_paintToInner(bb, x, y)
     self._hold_rects = {}
+    self._bookmark_pages = self:getBookmarkPages()
 
     local screen_size = Screen:getSize()
     local screen_w = screen_size.w
