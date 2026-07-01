@@ -2017,23 +2017,15 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
                 ch_left = doc:getTotalPagesLeft(pageno)
             end
             if ch_left then
-                ch_left = math.max(0, ch_left)
-                if ch_left > 0 then
-                    local result = ui.statistics:getTimeForPages(ch_left)
-                    if result and result ~= "N/A" then time_left_chapter = result end
-                else
-                    time_left_chapter = "0m"
-                end
+                local result = ui.statistics:getTimeForPages(math.max(0, ch_left))
+                if result and result ~= "N/A" then time_left_chapter = result end
             end
         end
         if needs("book_time_left") then
-            -- Use raw page count: getTimeForPages is calibrated against avg_time per raw page
             local doc_left = doc:getTotalPagesLeft(pageno)
-            if doc_left and doc_left > 0 then
-                local result = ui.statistics:getTimeForPages(doc_left)
+            if doc_left then
+                local result = ui.statistics:getTimeForPages(math.max(0, doc_left))
                 if result and result ~= "N/A" then time_left_doc = result end
-            elseif doc_left then
-                time_left_doc = "0m"
             end
         end
     end

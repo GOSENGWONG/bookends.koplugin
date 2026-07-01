@@ -516,6 +516,48 @@ local function stubUiWithStats(stats)
     }
 end
 
+local function stubUiForTimeLeft(opts)
+    opts = opts or {}
+    return {
+        view = { state = { page = opts.page or 10 } },
+        document = {
+            file = "/book.epub",
+            getPageCount = function() return opts.total_pages or 100 end,
+            hasHiddenFlows = function() return false end,
+            getProps = function() return {} end,
+            getTotalPagesLeft = function(_, _) return opts.doc_left end,
+        },
+        toc = nil,
+        doc_props = {},
+        annotation = nil,
+        statistics = {
+            avg_time = opts.avg_time or 30,
+            getTimeForPages = function(_, pages)
+                if pages == 0 then return "00:00" end
+                return string.format("%dm", math.floor(pages * (opts.avg_time or 30) / 60))
+            end,
+        },
+    }
+end
+
+test("book_time_left at last page (0 pages left) renders via getTimeForPages, not a hardcoded literal", function()
+    local ui = stubUiForTimeLeft({ doc_left = 0 })
+    local r = Tokens.expand("%book_time_left", ui, 0, 0)
+    eq(r, "00:00", "zero pages left should format through getTimeForPages(0), matching classic duration format")
+end)
+
+test("chap_time_left at last page (0 pages left, no toc) renders via getTimeForPages", function()
+    local ui = stubUiForTimeLeft({ doc_left = 0 })
+    local r = Tokens.expand("%chap_time_left", ui, 0, 0)
+    eq(r, "00:00", "chap_time_left falls back to doc:getTotalPagesLeft when ui.toc is nil, same zero-case fix applies")
+end)
+
+test("book_time_left with pages remaining still renders the formatted duration", function()
+    local ui = stubUiForTimeLeft({ doc_left = 20, avg_time = 30 })
+    local r = Tokens.expand("%book_time_left", ui, 0, 0)
+    eq(r, "10m", "20 pages * 30s / 60 = 10m, via the stubbed getTimeForPages")
+end)
+
 test("stats stub: smoke — getCurrentBookStats returns injected values", function()
     local ui = stubUiWithStats({ current_pages = 7, current_duration = 600 })
     local d, p = ui.statistics:getCurrentBookStats()
