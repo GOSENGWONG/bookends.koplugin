@@ -1852,9 +1852,11 @@ function Bookends:_paintToInner(bb, x, y)
             cfg.symbol_color = symbol_color
             -- Skim-gesture parity (#83): inline bars register their paint
             -- rect into the same list full-width bars use, so long-press
-            -- finds them too. Shares the table `_renderProgressBars` also
-            -- appends to later in this same repaint pass.
-            cfg.hold_rects = self._hold_rects
+            -- finds them too. Pass the owner (not the table itself) so a
+            -- fast-path repaint of a cached widget always targets whatever
+            -- table is current for *this* frame, not a stale snapshot from
+            -- whenever the widget was originally built.
+            cfg.hold_rects_owner = self
             -- Bar data (keyed by expanded line index, same order as line_configs)
             local expanded_idx = #line_configs + 1
             if bar_data[key] and bar_data[key][expanded_idx] then

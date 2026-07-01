@@ -287,8 +287,8 @@ function BarWidget:paintTo(bb, x, y)
     -- Skim-gesture parity (#83): register this paint rect the same way
     -- full-width bars do in main.lua's _renderProgressBars, so onHoldBookends
     -- finds inline bars too.
-    if self.hold_rects then
-        table.insert(self.hold_rects, { x = x, y = y, w = self.width, h = self.height })
+    if self.hold_rects_owner then
+        table.insert(self.hold_rects_owner._hold_rects, { x = x, y = y, w = self.width, h = self.height })
     end
 end
 
@@ -438,7 +438,7 @@ local function buildBarLine(text, cfg, available_w, max_width)
         colors = cfg.bar_colors,
         reverse = cfg.bar_reverse or false,
         unread_height = cfg.bar_unread_height,
-        hold_rects = cfg.hold_rects,
+        hold_rects_owner = cfg.hold_rects_owner,
     }
 
     table.insert(segments, bar_slot, { widget = bar_widget, w = bar_w, h = bar_h })
@@ -1089,7 +1089,7 @@ function OverlayWidget.buildStyledLine(segments, cfg, available_w, max_width)
                 colors = cfg.bar_colors,
                 reverse = cfg.bar_reverse or false,
                 unread_height = cfg.bar_unread_height,
-                hold_rects = cfg.hold_rects,
+                hold_rects_owner = cfg.hold_rects_owner,
             }
             table.insert(widgets, bar_slot, { widget = bar_widget, w = bar_w, h = bar_h })
             total_w = total_w + bar_w
