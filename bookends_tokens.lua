@@ -60,6 +60,25 @@ function Tokens.markerFracForBar(doc, toc, kind, current_pageno, marker_page)
     return math.max(0, math.min(1, (marker_page - cs) / (ctotal - 1)))
 end
 
+--- Chapter page-range [start, end) containing current_pageno, or nil if
+--- there's no chapter info (or the chapter is degenerate, <=1 page). `end`
+--- is exclusive — it's the first page of the *next* chapter, or one past
+--- the book's last page if there is no next chapter.
+--- Shared by markerFracForBar's chapter branch (via duplicated inline math,
+--- unchanged) and by the Bookmarks marker's range filter in main.lua, which
+--- needs to EXCLUDE out-of-chapter pages rather than clamp them the way a
+--- single session/book-open marker legitimately does.
+function Tokens.currentChapterRange(toc, doc, current_pageno)
+    if not toc then return nil end
+    local cs = toc:getPreviousChapter(current_pageno)
+    if toc:isChapterStart(current_pageno) then cs = current_pageno end
+    if not cs then return nil end
+    local nc = toc:getNextChapter(current_pageno)
+    local ce = nc or (doc:getPageCount() + 1)
+    if ce - cs <= 1 then return nil end
+    return cs, ce
+end
+
 --- Return the last digit of a numeric value as a string.
 -- Used by the %<token>_lastdigit family (#55) to expose the units digit
 -- of page/chapter counters for languages whose grammar branches on it

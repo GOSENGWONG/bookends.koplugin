@@ -1785,5 +1785,21 @@ test("lastDigit: float -> last digit of integer part shown by tostring", functio
     eq(Tokens.lastDigit(3.0), "0")
 end)
 
+test("currentChapterRange: returns [start, end) for the chapter containing current_pageno", function()
+    local ui = stubUi(5, 100, {
+        toc = { { page = 1, depth = 1, title = "C1" }, { page = 10, depth = 1, title = "C2" } },
+        start = 1, next = 10,
+    })
+    local cs, ce = Tokens.currentChapterRange(ui.toc, ui.document, 5)
+    eq(cs, 1, "chapter start")
+    eq(ce, 10, "chapter end (exclusive, start of next chapter)")
+end)
+
+test("currentChapterRange: nil when there's no toc", function()
+    local cs, ce = Tokens.currentChapterRange(nil, { getPageCount = function() return 100 end }, 5)
+    eq(cs, nil, "no toc -> nil")
+    eq(ce, nil, "no toc -> nil")
+end)
+
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)
