@@ -606,6 +606,7 @@ function Bookends:loadSettings()
     }
 
     self.skim_on_hold = self.settings:readSetting("skim_on_hold", true)
+    self.disable_auto_refresh = self.settings:isTrue("disable_auto_refresh")
     self.check_updates = self.settings:readSetting("check_updates", false)
     self.dev_branch = self.settings:readSetting("dev_branch", "")
     self.last_install_source = self.settings:readSetting("last_install_source", "release")
@@ -2132,7 +2133,7 @@ local TIMER_TOKENS = {
 }
 
 function Bookends:startRefreshTimer()
-    if self.refresh_timer_active then return end
+    if self.refresh_timer_active or self.disable_auto_refresh then return end
     self.refresh_timer_active = true
     self.refresh_timer_func = function()
         if not self.refresh_timer_active then return end

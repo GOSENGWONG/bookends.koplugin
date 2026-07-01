@@ -398,6 +398,22 @@ function Bookends:buildBookendsSettingsMenu()
             separator = true,
         },
         {
+            text = _("Disable automatic clock/battery refresh"),
+            checked_func = function()
+                return self.disable_auto_refresh
+            end,
+            callback = function()
+                self.disable_auto_refresh = not self.disable_auto_refresh
+                self.settings:saveSetting("disable_auto_refresh", self.disable_auto_refresh)
+                if self.disable_auto_refresh then
+                    self:stopRefreshTimer()
+                else
+                    self:startRefreshTimer()
+                end
+            end,
+            help_text = _("Stops the 60-second background timer that keeps the clock, battery, and time-left tokens updating without a page turn. Useful on devices where this timer interferes with sleep/wake (e.g. some Pocketbook models)."),
+        },
+        {
             text = _("Notify on wake when update available"),
             checked_func = function()
                 return self.check_updates
