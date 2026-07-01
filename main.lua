@@ -1238,16 +1238,25 @@ function Bookends:buildBarMarkers(mk_cfg, src)
     for _, slot in ipairs({ "top", "bottom" }) do
         local m = mk_cfg[slot]
         if m and m.type then
-            local frac = (m.type == "book_open") and src.book_open_frac or src.session_frac
-            if frac ~= nil then
+            local entry
+            if m.type == "bookmarks" then
+                local fracs = src.bookmark_fracs
+                if fracs and #fracs > 0 then
+                    entry = { fracs = fracs }
+                end
+            else
+                local frac = (m.type == "book_open") and src.book_open_frac or src.session_frac
+                if frac ~= nil then
+                    entry = { frac = frac }
+                end
+            end
+            if entry then
+                entry.size = m.size or 50
+                entry.offset = m.offset or 0
+                entry.style = m.style or "chevron"
+                entry.color = m.color and Colour.parseColorValue(m.color, Screen:isColorEnabled()) or nil
                 out = out or {}
-                out[slot] = {
-                    frac = frac,
-                    size = m.size or 50,
-                    offset = m.offset or 0,
-                    style = m.style or "chevron",
-                    color = m.color and Colour.parseColorValue(m.color, Screen:isColorEnabled()) or nil,
-                }
+                out[slot] = entry
             end
         end
     end

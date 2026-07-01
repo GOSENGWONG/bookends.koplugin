@@ -111,5 +111,35 @@ test("getBookmarkPages: nil when annotation module or list is absent", function(
     eq(self:getBookmarkPages(), nil, "no annotations list -> nil")
 end)
 
+test("type=bookmarks resolves src.bookmark_fracs as a list, with slot style/size/offset/colour applied", function()
+    local src = { session_frac = 0.25, book_open_frac = 0.10, bookmark_fracs = { 0.1, 0.4, 0.9 } }
+    local m = self:buildBarMarkers(
+        { top = { type = "bookmarks", size = 80, offset = 2, style = "solid", color = { grey = 128 } } }, src)
+    eq(#m.top.fracs, 3, "three bookmark fracs")
+    eq(m.top.fracs[1], 0.1); eq(m.top.fracs[2], 0.4); eq(m.top.fracs[3], 0.9)
+    eq(m.top.frac, nil, "bookmarks type does not set the singular .frac field")
+    eq(m.top.size, 80, "size")
+    eq(m.top.offset, 2, "offset")
+    eq(m.top.style, "solid", "style")
+    eq(m.top.color.grey, 128, "colour")
+end)
+
+test("type=bookmarks with empty bookmark_fracs omits the slot", function()
+    local m = self:buildBarMarkers({ top = { type = "bookmarks" } },
+        { session_frac = 0.25, book_open_frac = 0.10, bookmark_fracs = {} })
+    eq(m, nil, "empty list -> no resolvable slot -> nil whole table")
+end)
+
+test("type=bookmarks with nil bookmark_fracs (src has no bookmarks field) omits the slot", function()
+    local m = self:buildBarMarkers({ top = { type = "bookmarks" } }, SRC)
+    eq(m, nil, "SRC has no bookmark_fracs -> nil")
+end)
+
+test("existing session/book_open behaviour unchanged: still populate .frac, not .fracs", function()
+    local m = self:buildBarMarkers({ top = { type = "session" } }, SRC)
+    eq(m.top.frac, 0.25, "session still resolves .frac")
+    eq(m.top.fracs, nil, "session does not populate .fracs")
+end)
+
 print(pass .. " pass / " .. fail .. " fail")
 os.exit(fail == 0 and 0 or 1)
