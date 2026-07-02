@@ -150,6 +150,26 @@ test("existing session/book_open behaviour unchanged: still populate .frac, not 
     eq(m.top.fracs, nil, "session does not populate .fracs")
 end)
 
+test("type=today resolves src.today_frac via the singular-frac path (like session/book_open)", function()
+    local src = { session_frac = 0.25, book_open_frac = 0.10, today_frac = 0.60 }
+    local m = self:buildBarMarkers({ top = { type = "today", size = 70 } }, src)
+    eq(m.top.frac, 0.60, "today resolves to today_frac")
+    eq(m.top.fracs, nil, "today does not populate the bookmarks-only .fracs field")
+    eq(m.top.size, 70, "size passed through")
+end)
+
+test("type=today with nil today_frac (src has no today_frac field) omits the slot", function()
+    local m = self:buildBarMarkers({ top = { type = "today" } }, SRC)
+    eq(m, nil, "SRC (session/book_open only) has no today_frac -> nil")
+end)
+
+test("existing book_open/session/bookmarks resolution unaffected by the three-way branch", function()
+    local m1 = self:buildBarMarkers({ top = { type = "book_open" } }, SRC)
+    eq(m1.top.frac, 0.10, "book_open still resolves correctly")
+    local m2 = self:buildBarMarkers({ top = { type = "session" } }, SRC)
+    eq(m2.top.frac, 0.25, "session still resolves correctly")
+end)
+
 local function fakeTodayMarkerSettings(initial_books)
     local data = { books = initial_books or {} }
     local calls = { saveSetting = 0, flush = 0 }

@@ -1272,7 +1272,14 @@ function Bookends:buildBarMarkers(mk_cfg, src)
                     entry = { fracs = fracs }
                 end
             else
-                local frac = (m.type == "book_open") and src.book_open_frac or src.session_frac
+                local frac
+                if m.type == "book_open" then
+                    frac = src.book_open_frac
+                elseif m.type == "today" then
+                    frac = src.today_frac
+                else
+                    frac = src.session_frac
+                end
                 if frac ~= nil then
                     entry = { frac = frac }
                 end
