@@ -567,6 +567,8 @@ function Bookends:openSettings()
     local LuaSettings = require("luasettings")
     local settings_path = DataStorage:getSettingsDir() .. "/bookends.lua"
     self.settings = LuaSettings:open(settings_path)
+    local today_marker_path = DataStorage:getSettingsDir() .. "/bookends_today_marker.lua"
+    self.today_marker_settings = LuaSettings:open(today_marker_path)
 
     -- One-time migration from G_reader_settings
     if not self.settings:has("migrated") then
@@ -1226,6 +1228,31 @@ function Bookends:getBookmarkPages()
     end
     return pages
 end
+
+-- Persisted per-book anchor for the "Today" bar marker (#79 follow-up):
+-- the page the reader was on at their first interaction of the current
+-- calendar day, surviving app restarts/sleep/book-switches until the date
+-- rolls over. Unlike session/book-open (in-memory, reset every init), this
+-- needs real persistence, so it lives in its own settings file rather than
+-- the main bookends.lua blob (modeled on the third-party hardcoverapp
+-- plugin's own books[filename]-keyed settings file).
+function Bookends:getTodayMarkerPage()
+    local file = self.ui.document and self.ui.document.file
+    if not file then return nil end
+    local pageno = Tokens.getCurrentPageNumber(self.ui)
+    if not pageno then return nil end
+    local today = os.date("%Y-%m-%d")
+    local books = self.today_marker_settings:readSetting("books") or {}
+    local entry = books[file]
+    if not entry or entry.date ~= today then
+        books[file] = { page = pageno, date = today }
+        self.today_marker_settings:saveSetting("books", books)
+        self.today_marker_settings:flush()
+        return pageno
+    end
+    return entry.page
+end
+
 -- Build the renderer-facing markers table (#77) for one bar line.
 -- @param mk_cfg table: per-line config { top = {type,size,offset,color}, bottom = {...} }
 -- @param src table or nil: the chosen bar_info (book/chapter) carrying
@@ -2154,6 +2181,7 @@ function Bookends:deletePluginSettings()
         self._pending_autosave = nil
     end
     self.settings = nil
+    self.today_marker_settings = nil
 
     local DataStorage = require("datastorage")
     local ffiUtil = require("ffi/util")
@@ -2161,6 +2189,8 @@ function Bookends:deletePluginSettings()
 
     os.remove(settings_dir .. "/bookends.lua")
     os.remove(settings_dir .. "/bookends.lua.old")
+    os.remove(settings_dir .. "/bookends_today_marker.lua")
+    os.remove(settings_dir .. "/bookends_today_marker.lua.old")
     pcall(ffiUtil.purgeDir, settings_dir .. "/bookends_cache")
     pcall(ffiUtil.purgeDir, settings_dir .. "/bookends_presets")
 

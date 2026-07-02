@@ -23,6 +23,15 @@ package.loaded["ui/widget/container/widgetcontainer"] = {
     new    = function(self, t) return setmetatable(t or {}, { __index = self }) end,
 }
 package.loaded["bookends_i18n"] = { gettext = function(s) return s end }
+package.loaded["bookends_tokens"] = {
+    getCurrentPageNumber = function(ui)
+        if ui and ui.document and ui.document.getCurrentPage then
+            local ok, p = pcall(function() return ui.document:getCurrentPage() end)
+            if ok and p then return p end
+        end
+        return ui and ui.view and ui.view.state and ui.view.state.page
+    end
+}
 _G.require = function(name)
     if package.loaded[name] then return package.loaded[name] end
     local stub = permissive(); package.loaded[name] = stub; return stub
@@ -139,6 +148,68 @@ test("existing session/book_open behaviour unchanged: still populate .frac, not 
     local m = self:buildBarMarkers({ top = { type = "session" } }, SRC)
     eq(m.top.frac, 0.25, "session still resolves .frac")
     eq(m.top.fracs, nil, "session does not populate .fracs")
+end)
+
+local function fakeTodayMarkerSettings(initial_books)
+    local data = { books = initial_books or {} }
+    local calls = { saveSetting = 0, flush = 0 }
+    return {
+        readSetting = function(_, key) return data[key] end,
+        saveSetting = function(_, key, value) data[key] = value; calls.saveSetting = calls.saveSetting + 1 end,
+        flush = function(_) calls.flush = calls.flush + 1 end,
+        _data = data,
+        _calls = calls,
+    }
+end
+
+test("getTodayMarkerPage: no entry for this book -> anchors to current page, writes once", function()
+    self.today_marker_settings = fakeTodayMarkerSettings()
+    self.ui = { document = { file = "/book.epub" }, view = { state = { page = 42 } } }
+    local page = self:getTodayMarkerPage()
+    eq(page, 42, "anchors to current page")
+    eq(self.today_marker_settings._data.books["/book.epub"].page, 42, "persisted page")
+    eq(self.today_marker_settings._calls.saveSetting, 1, "wrote once")
+    eq(self.today_marker_settings._calls.flush, 1, "flushed once")
+end)
+
+test("getTodayMarkerPage: stale date -> re-anchors to current page, writes", function()
+    self.today_marker_settings = fakeTodayMarkerSettings({
+        ["/book.epub"] = { page = 10, date = "2000-01-01" },
+    })
+    self.ui = { document = { file = "/book.epub" }, view = { state = { page = 99 } } }
+    local page = self:getTodayMarkerPage()
+    eq(page, 99, "re-anchors to current page")
+    eq(self.today_marker_settings._data.books["/book.epub"].page, 99, "persisted new page")
+    eq(self.today_marker_settings._calls.saveSetting, 1, "wrote once")
+end)
+
+test("getTodayMarkerPage: current-date entry -> returns stored page, does NOT write", function()
+    local today = os.date("%Y-%m-%d")
+    self.today_marker_settings = fakeTodayMarkerSettings({
+        ["/book.epub"] = { page = 55, date = today },
+    })
+    self.ui = { document = { file = "/book.epub" }, view = { state = { page = 200 } } }
+    local page = self:getTodayMarkerPage()
+    eq(page, 55, "returns the already-anchored page, ignoring current page")
+    eq(self.today_marker_settings._calls.saveSetting, 0, "no write when date matches")
+    eq(self.today_marker_settings._calls.flush, 0, "no flush when date matches")
+end)
+
+test("getTodayMarkerPage: no document -> nil", function()
+    self.today_marker_settings = fakeTodayMarkerSettings()
+    self.ui = { document = nil }
+    eq(self:getTodayMarkerPage(), nil, "no document -> nil")
+end)
+
+test("getTodayMarkerPage: independent entries per book", function()
+    local today = os.date("%Y-%m-%d")
+    self.today_marker_settings = fakeTodayMarkerSettings({
+        ["/book-a.epub"] = { page = 5, date = today },
+    })
+    self.ui = { document = { file = "/book-b.epub" }, view = { state = { page = 300 } } }
+    local page = self:getTodayMarkerPage()
+    eq(page, 300, "book B gets its own fresh anchor")
+    eq(self.today_marker_settings._data.books["/book-a.epub"].page, 5, "book A's entry untouched")
 end)
 
 print(pass .. " pass / " .. fail .. " fail")
