@@ -1601,6 +1601,7 @@ function Bookends:_renderProgressBars(bb, x, y, screen_w, screen_h)
                     local src = {
                         session_frac   = Tokens.markerFracForBar(doc, toc, kind, pageno_local, self._marker_session_page),
                         book_open_frac = Tokens.markerFracForBar(doc, toc, kind, pageno_local, self._marker_book_open_page),
+                        today_frac     = Tokens.markerFracForBar(doc, toc, kind, pageno_local, self._marker_today_page),
                         bookmark_fracs = bookmark_fracs,
                     }
                     markers = self:buildBarMarkers(bar_cfg.markers, src)
@@ -1677,6 +1678,7 @@ end
 function Bookends:_paintToInner(bb, x, y)
     self._hold_rects = {}
     self._bookmark_pages = self:getBookmarkPages()
+    self._marker_today_page = self:getTodayMarkerPage()
 
     local screen_size = Screen:getSize()
     local screen_w = screen_size.w
@@ -1770,7 +1772,8 @@ function Bookends:_paintToInner(bb, x, y)
                         { legacy_literal = is_edit_line, stats_cache = stats_cache,
                           marker_pages = { session = self._marker_session_page,
                                            book_open = self._marker_book_open_page,
-                                           bookmarks = self._bookmark_pages } })
+                                           bookmarks = self._bookmark_pages,
+                                           today = self._marker_today_page } })
                     if not is_empty then
                         table.insert(expanded_lines, result)
                         table.insert(final_indices, visible_indices[j])

@@ -1983,6 +1983,7 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
             end
             bar_info.book.session_frac   = bookFrac(mp.session)
             bar_info.book.book_open_frac = bookFrac(mp.book_open)
+            bar_info.book.today_frac     = bookFrac(mp.today)
             if mp.bookmarks then
                 local book_fracs = {}
                 for _, p in ipairs(mp.bookmarks) do
@@ -2004,6 +2005,7 @@ function Tokens.expand(format_str, ui, session_elapsed, session_pages_read, prev
                     end
                     bar_info.chapter.session_frac   = chFrac(mp.session)
                     bar_info.chapter.book_open_frac = chFrac(mp.book_open)
+                    bar_info.chapter.today_frac     = chFrac(mp.today)
                     if mp.bookmarks then
                         local chap_fracs = {}
                         for _, p in ipairs(mp.bookmarks) do

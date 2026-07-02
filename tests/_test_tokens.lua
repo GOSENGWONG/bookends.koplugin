@@ -1815,5 +1815,32 @@ test("inline bar: bookmark_fracs computed on both book and chapter scales", func
     eq(#line_bar.chapter.bookmark_fracs, 2, "only pages 3 and 8 fall inside the current chapter (1..9)")
 end)
 
+test("inline bar: today_frac computed on both book and chapter scales", function()
+    local ui = stubUi(5, 100, {
+        toc = { { page = 1, depth = 1, title = "C1" }, { page = 10, depth = 1, title = "C2" } },
+        start = 1, next = 10,
+    })
+    local _, _, line_bar = Tokens.expand("%bar", ui, 0, 0, nil, 1, nil, nil,
+        { marker_pages = { today = 4 } })
+    eq(line_bar.book.today_frac, 4 / 100, "book-scale today_frac")
+    -- chFrac(p) = (p - cs) / (ctotal - 1) where ctotal = ce - cs = 10 - 1 = 9,
+    -- so chFrac(4) = (4 - 1) / (9 - 1) = 3/8.
+    eq(line_bar.chapter.today_frac, (4 - 1) / (10 - 1 - 1), "chapter-scale today_frac")
+end)
+
+test("inline bar: today_frac clamps to the chapter edge when the anchor page is outside the current chapter", function()
+    local ui = stubUi(5, 100, {
+        toc = { { page = 1, depth = 1, title = "C1" }, { page = 10, depth = 1, title = "C2" } },
+        start = 1, next = 10,
+    })
+    local _, _, line_bar = Tokens.expand("%bar", ui, 0, 0, nil, 1, nil, nil,
+        { marker_pages = { today = 50 } })
+    eq(line_bar.book.today_frac, 0.5, "book-scale still resolves (no range restriction)")
+    -- chFrac clamps: (50 - 1) / (10 - 1) = 5.44, clamped to 1. This matches
+    -- session/book_open's existing behavior (deliberately NOT range-filtered
+    -- like bookmarks — see the design note below).
+    eq(line_bar.chapter.today_frac, 1, "chapter-scale clamps an out-of-chapter anchor to the edge")
+end)
+
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))
 os.exit(fail == 0 and 0 or 1)
