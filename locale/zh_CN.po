@@ -1278,7 +1278,7 @@ msgstr "底部居中点击手势"
 
 #: menu/main_menu.lua:302
 msgid "toggle bookends"
-msgstr "切换阅读信息栏状态"
+msgstr "切换信息栏状态"
 
 #: menu/main_menu.lua:304
 msgid "cycle presets"
@@ -1301,7 +1301,7 @@ msgstr "穿透"
 
 #: menu/main_menu.lua:329
 msgid "Toggle bookends"
-msgstr "切换阅读信息栏状态"
+msgstr "切换信息栏状态"
 
 #: menu/main_menu.lua:343
 msgid "Cycle starred presets"
