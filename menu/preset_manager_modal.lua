@@ -1691,7 +1691,7 @@ function PresetManagerModal._editAuthor(self, entry)
 end
 
 function PresetManagerModal._duplicate(self, entry)
-    local suggested = entry.name .. " (" .. _("copy") .. ")"
+    local suggested = string.format(_("%s (copy)"), entry.name)
     local dlg
     dlg = InputDialog:new{
         title = _("Duplicate preset"),
@@ -1925,7 +1925,7 @@ local function submitToGalleryImpl(self, entry)
             _("Custom fonts in this preset:"),
         }
         for _, f in ipairs(non_portable) do
-            table.insert(lines, "  • " .. f.location .. ": " .. f.font)
+            table.insert(lines, string.format(_("  • %s: %s"), f.location, f.font))
         end
         table.insert(lines, "")
         table.insert(lines, _("Tip: for portable presets, pick a Font-family font (Serif, Sans-serif, etc.) instead of a specific one — those adapt to each user's font settings."))
@@ -2049,7 +2049,7 @@ function PresetManagerModal._promptInstallCollision(self, existing, data, entry)
                 local input
                 input = InputDialog:new{
                     title = _("Install as"),
-                    input = entry.name .. " (2)",
+                    input = string.format(_("%s (2)"), entry.name),
                     buttons = {{
                         { text = _("Cancel"), id = "close",
                           callback = function() UIManager:close(input); self.rebuild() end },

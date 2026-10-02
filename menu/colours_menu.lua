@@ -70,7 +70,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
             function()
                 bc[field] = nil; saveColors()
             end,
-            _("Default") .. " (" .. _("per style") .. ")",
+            _("Default (per style)"),
             {
                 text = _("Transparent"),
                 callback = function()
@@ -107,7 +107,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
     return {
         {
             text_func = function()
-                return _("Progress bar colour") .. ": " .. pctLabel("fill")
+                return _("Progress bar colour: ") .. pctLabel("fill")
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -120,7 +120,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
         },
         {
             text_func = function()
-                return _("Progress bar track colour") .. ": " .. pctLabel("bg")
+                return _("Progress bar track colour: ") .. pctLabel("bg")
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -133,7 +133,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
         },
         {
             text_func = function()
-                return _("Tick color") .. ": " .. pctLabel("tick")
+                return _("Tick color: ")  .. pctLabel("tick")
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -158,7 +158,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
         },
         {
             text_func = function()
-                return _("Border color") .. ": " .. pctLabel("border")
+                return _("Border color: ") .. pctLabel("border")
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -172,9 +172,9 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
         {
             text_func = function()
                 if bc.border_thickness then
-                    return _("Border thickness") .. ": " .. bc.border_thickness .. "px"
+                    return _("Border thickness: ") .. bc.border_thickness .. "px"
                 end
-                return _("Border thickness") .. ": 1px"
+                return _("Border thickness: ") .. "1px"
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -194,7 +194,7 @@ function Bookends:_buildColorItems(bc, saveColors, on_reopen)
         },
         {
             text_func = function()
-                return _("Tick inversion color") .. ": " .. pctLabel("invert")
+                return _("Tick inversion color: ") .. pctLabel("invert")
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -274,34 +274,34 @@ function Bookends:buildTextColourMenu()
                 access.clear()
                 self:markDirty()
             end,
-            _("Default") .. " (" .. default_label_suffix .. ")",
+            string.format(_("Default (%s)"), default_label_suffix),
             extra_button)
     end
 
     local function textPctLabel()
         local text_color = self.settings:readSetting("text_color")
         if not text_color then
-            return _("default") .. " (" .. _("book") .. ")"
+            return _("default (book)")
         end
         if text_color.hex then return text_color.hex end
         if text_color.grey then
             local pct = math.floor((0xFF - text_color.grey) * 100 / 0xFF + 0.5)
             return pct .. "%"
         end
-        return _("default") .. " (" .. _("book") .. ")"
+        return _("default (book)")
     end
 
     local function symbolPctLabel()
         local symbol_color = self.settings:readSetting("symbol_color")
         if not symbol_color then
-            return _("default") .. " (" .. _("text") .. ")"
+            return _("default (text)")
         end
         if symbol_color.hex then return symbol_color.hex end
         if symbol_color.grey then
             local pct = math.floor((0xFF - symbol_color.grey) * 100 / 0xFF + 0.5)
             return pct .. "%"
         end
-        return _("default") .. " (" .. _("text") .. ")"
+        return _("default (text)")
     end
 
     -- One background section's colour, read and written through the rules in
@@ -345,7 +345,7 @@ function Bookends:buildTextColourMenu()
     return {
         {
             text_func = function()
-                return _("Text color") .. ": " .. textPctLabel()
+                return _("Text color: ") .. textPctLabel()
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -359,7 +359,7 @@ function Bookends:buildTextColourMenu()
         },
         {
             text_func = function()
-                return _("Icon color") .. ": " .. symbolPctLabel()
+                return _("Icon color: ") .. symbolPctLabel()
             end,
             help_text = _("Applies to Nerd Font and FontAwesome icon glyphs (the Private Use Area range, e.g. %W, %B, %k). Unicode symbols in the regular text ranges (like the hourglass \"⌛\") follow the text color instead.\n\nAn inline [c=#RRGGBB]…[/c] tag in a line overrides the icon colour for any glyphs inside it."),
             keep_menu_open = true,
@@ -374,7 +374,7 @@ function Bookends:buildTextColourMenu()
         },
         {
             text_func = function()
-                return _("Top background") .. ": " .. bgPctLabel("top")
+                return _("Top background: ") .. bgPctLabel("top")
             end,
             help_text = _("Solid fill drawn behind this overlay region, edge to edge across the screen. Choose a colour to enable, hold this row or tap Default in the picker to turn off."),
             keep_menu_open = true,
@@ -389,7 +389,7 @@ function Bookends:buildTextColourMenu()
         },
         {
             text_func = function()
-                return _("Bottom background") .. ": " .. bgPctLabel("bottom")
+                return _("Bottom background: ") .. bgPctLabel("bottom")
             end,
             help_text = _("Solid fill drawn behind this overlay region, edge to edge across the screen. Choose a colour to enable, hold this row or tap Default in the picker to turn off."),
             keep_menu_open = true,

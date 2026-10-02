@@ -41,7 +41,7 @@ function Bookends:buildPositionMenu(pos)
                 if #preview > 42 then
                     preview = Utils.truncateUtf8(preview, 39)
                 end
-                return _("Line") .. " " .. i .. tag .. ": " .. preview
+                return string.format(_("Line %s%s: %s"), i, tag, preview)
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)
@@ -55,7 +55,7 @@ function Bookends:buildPositionMenu(pos)
 
     -- Add line
     table.insert(menu, {
-        text = "+ " .. _("Add line") .. "  (" .. _("long press lines to manage") .. ")",
+        text = _("+ Add line  (long press lines to manage)"),
         keep_menu_open = true,
         callback = function(touchmenu_instance)
             local idx = #self.positions[pos.key].lines + 1
@@ -72,7 +72,9 @@ function Bookends:buildPositionMenu(pos)
     table.insert(menu, {
         text_func = function()
             local val = self.positions[pos.key].v_offset
-            if val then return v_label .. " (" .. val .. ")" end
+            if val then
+                return string.format(_("%s (%s)"), v_label, val)
+            end
             return v_label
         end,
         keep_menu_open = true,
@@ -94,9 +96,11 @@ function Bookends:buildPositionMenu(pos)
         local h_label = is_left and _("Extra left margin") or _("Extra right margin")
         table.insert(menu, {
             text_func = function()
-                local val = self.positions[pos.key].h_offset
-                if val then return h_label .. " (" .. val .. ")" end
-                return h_label
+            local val = self.positions[pos.key].h_offset
+            if val then
+                return string.format(_("%s (%s)"), h_label, val)
+            end
+            return h_label
             end,
             keep_menu_open = true,
             callback = function(touchmenu_instance)

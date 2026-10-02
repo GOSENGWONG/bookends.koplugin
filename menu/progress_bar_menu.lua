@@ -144,7 +144,7 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
         },
         {
             text_func = function()
-                return _("Type") .. ": " .. (bar_cfg.type == "chapter" and _("Chapter") or _("Book"))
+                return T(_("Type: %1"), bar_cfg.type == "chapter" and _("Chapter") or _("Book"))
             end,
             enabled_func = isEnabled,
             keep_menu_open = true,
@@ -177,7 +177,7 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
         {
             text_func = function()
                 local style_labels = { solid = _("Solid"), bordered = _("Bordered"), rounded = _("Rounded"), metro = _("Metro"), wavy = _("Wave"), radial = _("Radial"), radial_hollow = _("Radial hollow"), pacman = _("Pacman") }
-                return _("Style") .. ": " .. (style_labels[bar_cfg.style] or _("Solid"))
+                return _("Style: ") .. (style_labels[bar_cfg.style] or _("Solid"))
             end,
             enabled_func = isEnabled,
             keep_menu_open = true,
@@ -192,7 +192,7 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
         {
             text_func = function()
                 local labels = { top = _("Top"), bottom = _("Bottom"), left = _("Left"), right = _("Right") }
-                return _("Anchor") .. ": " .. (labels[bar_cfg.v_anchor or "bottom"])
+                return _("Anchor: ") .. (labels[bar_cfg.v_anchor or "bottom"])
             end,
             enabled_func = isEnabled,
             keep_menu_open = true,
@@ -265,9 +265,9 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
                 local default = is_radial and 60 or 20
                 local read_val = bar_cfg.height or default
                 if bar_cfg.unread_height ~= nil and bar_cfg.unread_height ~= read_val then
-                    return label .. ": " .. read_val .. "/" .. bar_cfg.unread_height .. "px"
+                    return T(_("%1: %2/%3px"), label, read_val, bar_cfg.unread_height)
                 end
-                return label .. ": " .. read_val .. "px"
+                return T(_("%1: %2px"), label, read_val)
             end,
             enabled_func = isEnabled,
             keep_menu_open = true,
@@ -332,10 +332,11 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
         },
         {
             text_func = function()
-                return _("Adjust margins") .. " (" ..
-                    (bar_cfg.band_offset or bar_cfg.margin_v or 0) .. "/" ..
-                    (bar_cfg.margin_left or 0) .. "/" ..
-                    (bar_cfg.margin_right or 0) .. ")"
+            return string.format(_("Adjust margins (%s/%s/%s)"),
+                bar_cfg.band_offset or bar_cfg.margin_v or 0,
+                bar_cfg.margin_left or 0,
+                bar_cfg.margin_right or 0
+            )
             end,
             enabled_func = isEnabled,
             keep_menu_open = true,
@@ -387,7 +388,7 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
                 -- Per-bar tick height override
                 table.insert(custom_items, {
                     text_func = function()
-                        return _("Tick height") .. ": " .. (bc.tick_height_pct or 100) .. "%"
+                        return _("Tick height: ") .. (bc.tick_height_pct or 100) .. "%"
                     end,
                     enabled_func = function() return bar_cfg.colors ~= nil end,
                     keep_menu_open = true,
@@ -413,9 +414,9 @@ function Bookends:buildSingleBarMenu(bar_idx, bar_cfg)
                     text_func = function()
                         local m = bc.tick_width_multiplier
                         if m then
-                            return _("Tick width") .. ": " .. m .. "x"
+                            return string.format(_("Tick width: %sx"), m)
                         end
-                        return _("Tick width") .. ": " .. _("default") .. " (" .. self.DEFAULT_TICK_WIDTH_MULTIPLIER .. "x)"
+                        return string.format(_("Tick width: default (%sx)"), self.DEFAULT_TICK_WIDTH_MULTIPLIER)
                     end,
                     enabled_func = function() return bar_cfg.colors ~= nil end,
                     keep_menu_open = true,
@@ -487,7 +488,7 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
         return {
             {
                 text_func = function()
-                    local s = getS(slot); return _("Type") .. ": " .. (LABELS[(s and s.type) or "off"])
+                    local s = getS(slot); return _("Type: ") .. (LABELS[(s and s.type) or "off"])
                 end,
                 keep_menu_open = true,
                 callback = function(tmi)
@@ -505,7 +506,7 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
                 end,
             },
             {
-                text_func = function() local s = getS(slot); return _("Style") .. ": " .. (STYLE_LABELS[s and s.style] or STYLE_LABELS.chevron) end,
+                text_func = function() local s = getS(slot); return _("Style: ") .. (STYLE_LABELS[s and s.style] or STYLE_LABELS.chevron) end,
                 enabled_func = enabledSlot,
                 keep_menu_open = true,
                 callback = function(tmi)
@@ -518,7 +519,7 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
                 end,
             },
             {
-                text_func = function() local s = getS(slot); return _("Size") .. ": " .. ((s and s.size) or 50) .. "%" end,
+                text_func = function() local s = getS(slot); return _("Size: ") .. ((s and s.size) or 50) .. "%" end,
                 enabled_func = enabledSlot,
                 keep_menu_open = true,
                 callback = function(tmi)
@@ -529,7 +530,7 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
                 end,
             },
             {
-                text_func = function() local s = getS(slot); return _("Offset") .. ": " .. ((s and s.offset) or 0) .. "px" end,
+                text_func = function() local s = getS(slot); return _("Offset: ") .. ((s and s.offset) or 0) .. "px" end,
                 enabled_func = enabledSlot,
                 keep_menu_open = true,
                 callback = function(tmi)
@@ -558,7 +559,7 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
                             function(val) if getS(slot) then getS(slot).color = { grey = 0xFF - math.floor(val * 0xFF / 100 + 0.5) }; saveBar() end end,
                             nil, nil, nil, tmi,
                             function() if getS(slot) then getS(slot).color = nil; saveBar() end end,
-                            _("Default") .. " (" .. _("tick colour") .. ")")
+                            _("Default (tick colour)"))
                     end
                 end,
             },
@@ -566,11 +567,11 @@ function Bookends:buildBarMarkerMenu(bar_cfg, saveBar)
     end
     return {
         {
-            text_func = function() local s = getS("top"); return _("Top marker") .. ": " .. (LABELS[(s and s.type) or "off"]) end,
+            text_func = function() local s = getS("top"); return _("Top marker: ") .. (LABELS[(s and s.type) or "off"]) end,
             sub_item_table_func = function() return slotMenu("top") end,
         },
         {
-            text_func = function() local s = getS("bottom"); return _("Bottom marker") .. ": " .. (LABELS[(s and s.type) or "off"]) end,
+            text_func = function() local s = getS("bottom"); return _("Bottom marker: ") .. (LABELS[(s and s.type) or "off"]) end,
             sub_item_table_func = function() return slotMenu("bottom") end,
         },
     }

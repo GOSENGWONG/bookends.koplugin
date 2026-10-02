@@ -65,7 +65,7 @@ local function saveAsNewPresetDialog(self)
                     table.insert(cycle, filename)
                     self.settings:saveSetting("preset_cycle", cycle)
                     local Notification = require("ui/widget/notification")
-                    Notification:notify(_("Saved preset:") .. " " .. name)
+                    Notification:notify(_("Saved preset: ") .. name)
                 end
                 UIManager:close(dlg)
             end },
@@ -169,7 +169,7 @@ function Bookends:buildMainMenu()
     table.insert(menu, {
         text_func = function()
             if Updater.getAvailableUpdate() then
-                return _("Bookends settings") .. " (" .. _("plugin update available") .. ")"
+                return _("Bookends settings (plugin update available)")
             end
             return _("Bookends settings")
         end,
@@ -186,7 +186,7 @@ function Bookends:buildMainMenu()
         text_func = function()
             local name = self:getActivePresetName()
             if name then
-                return _("Preset") .. " (" .. name .. ")"
+                return string.format(_("Preset (%s)"), name)
             end
             return _("Preset")
         end,
@@ -277,7 +277,7 @@ function Bookends:buildBookendsSettingsMenu()
         {
             text_func = function()
                 if not self.stock_bar_disabled then
-                    return _("Disable stock status bar") .. " (" .. _("recommended") .. ")"
+                    return _("Disable stock status bar (recommended)")
                 end
                 return _("Disable stock status bar")
             end,
@@ -303,7 +303,7 @@ function Bookends:buildBookendsSettingsMenu()
             text_func = function()
                 local fam = Utils.getFontFamilyLabel(self.defaults.font_face)
                 if fam then
-                    return _("Default font") .. " (" .. fam.label .. ")"
+                    return string.format(_("Default font (%s)"), fam.label)
                 end
                 local ok, FontChooser = pcall(require, "ui/widget/fontchooser")
                 local name
@@ -313,7 +313,7 @@ function Bookends:buildBookendsSettingsMenu()
                 if not name then
                     name = self.defaults.font_face:match("([^/]+)$"):gsub("%.%w+$", "")
                 end
-                return _("Default font") .. " (" .. name .. ")"
+                return string.format(_("Default font (%s)"), name)
             end,
             callback = function()
                 local inheriting = {}
@@ -341,11 +341,11 @@ function Bookends:buildBookendsSettingsMenu()
                 local action = self.settings:readSetting("bottom_center_tap_action")
                 local label = _("Bottom center tap gesture")
                 if action == "toggle" then
-                    return label .. " (" .. _("toggle bookends") .. ")"
+                    return string.format(_("%s (toggle bookends)"), label)
                 elseif action == "cycle" then
-                    return label .. " (" .. _("cycle presets") .. ")"
+                    return string.format(_("%s (cycle presets)"), label)
                 elseif action == "library" then
-                    return label .. " (" .. _("preset library") .. ")"
+                    return string.format(_("%s (preset library)"), label)
                 end
                 return label
             end,
@@ -476,9 +476,9 @@ function Bookends:buildBookendsSettingsMenu()
                     source_suffix = " (branch: " .. branch .. ")"
                 end
                 if available then
-                    return _("Update available") .. ": v" .. current .. source_suffix .. " \xE2\x86\x92 v" .. available
+                    return string.format(_("Update available: v%s%s → v%s"), current, source_suffix, available)
                 end
-                return _("Installed version") .. ": v" .. current .. source_suffix
+                return string.format(_("Installed version: v%s%s"), current, source_suffix)
             end,
             keep_menu_open = true,
             callback = function()
@@ -501,7 +501,7 @@ function Bookends:buildBookendsSettingsMenu()
                         if b == "" then
                             return _("Development branch")
                         end
-                        return _("Development branch") .. ": " .. b
+                        return _("Development branch: ") .. b
                     end,
                     keep_menu_open = true,
                     callback = function(touchmenu_instance)
@@ -514,7 +514,7 @@ function Bookends:buildBookendsSettingsMenu()
                         if b == "" then
                             return _("Check for updates")
                         end
-                        return _("Install branch") .. ": " .. b
+                        return _("Install branch: ") .. b
                     end,
                     keep_menu_open = true,
                     callback = function()
@@ -533,10 +533,10 @@ function Bookends:buildBookendsSettingsMenu()
                         local current = Updater.getInstalledVersion()
                         local source = self.last_install_source or "release"
                         if source == "release" then
-                            return _("Installed: v") .. current .. " (release)"
+                            return string.format(_("Installed: v%s (release)"), current)
                         end
                         local branch = source:match("^branch:(.+)$") or source
-                        return _("Installed: v") .. current .. " (branch: " .. branch .. ")"
+                        return string.format(_("Installed: v%s (branch: %s)"), current, branch)
                     end,
                     enabled_func = function() return false end,
                     keep_menu_open = true,
@@ -632,7 +632,7 @@ function Bookends:buildPresetAdjustmentsMenu()
     table.insert(items, {
         text_func = function()
             local name = self:getActivePresetName() or ""
-            return _("Rename") .. " (" .. name .. ")…"
+            return string.format(_("Rename (%s)…"), name)
         end,
         enabled_func = function()
             return self.enabled and self:getActivePresetFilename() ~= nil
@@ -646,7 +646,7 @@ function Bookends:buildPresetAdjustmentsMenu()
 
     table.insert(items, {
         text_func = function()
-            return _("Font scale") .. " (" .. self.defaults.font_scale .. "%)"
+            return string.format(_("Font scale (%s%%)"), self.defaults.font_scale)
         end,
         keep_menu_open = true,
         callback = function(touchmenu_instance)
@@ -664,7 +664,7 @@ function Bookends:buildPresetAdjustmentsMenu()
     table.insert(items, {
         text_func = function()
             local m = self.defaults
-            return _("Adjust margins") .. " (" .. m.margin_top .. "/" .. m.margin_bottom .. "/" .. m.margin_left .. "/" .. m.margin_right .. ")"
+            return string.format(_("Adjust margins (%s/%s/%s/%s)"), m.margin_top, m.margin_bottom, m.margin_left, m.margin_right)
         end,
         keep_menu_open = true,
         callback = function(touchmenu_instance)
@@ -674,7 +674,7 @@ function Bookends:buildPresetAdjustmentsMenu()
 
     table.insert(items, {
         text_func = function()
-            return _("Truncation gap between regions") .. " (" .. self.defaults.overlap_gap .. ")"
+            return string.format(_("Truncation gap between regions (%s)"), self.defaults.overlap_gap)
         end,
         keep_menu_open = true,
         callback = function(touchmenu_instance)
